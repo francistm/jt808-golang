@@ -38,7 +38,7 @@ func readUint16(reader io.Reader) (uint16, error) {
 	return binary.BigEndian.Uint16(buf), nil
 }
 
-// 消息发送前对消息中 0x7e, 0x7d 进行转移
+// 消息发送前对消息中 0x7e, 0x7d 进行转义
 // 需先将消息体进行转义，然后在首位增加 0x7e 的标识位字节
 func escapeChars(buf []byte) ([]byte, error) {
 	var writer bytes.Buffer
