@@ -18,16 +18,6 @@ func readBCD(reader io.Reader, byteLen int) (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
-func readUint8(reader io.Reader) (uint8, error) {
-	buf := make([]byte, 1)
-
-	if _, err := reader.Read(buf); err != nil {
-		return 0, err
-	}
-
-	return buf[0], nil
-}
-
 func readUint16(reader io.Reader) (uint16, error) {
 	buf := make([]byte, 2)
 
@@ -36,6 +26,16 @@ func readUint16(reader io.Reader) (uint16, error) {
 	}
 
 	return binary.BigEndian.Uint16(buf), nil
+}
+
+func readUint32(reader io.Reader) (uint32, error) {
+	buf := make([]byte, 4)
+
+	if _, err := reader.Read(buf); err != nil {
+		return 0, err
+	}
+
+	return binary.BigEndian.Uint32(buf), nil
 }
 
 // 消息发送前对消息中 0x7e, 0x7d 进行转义

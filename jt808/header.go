@@ -37,10 +37,10 @@ type PackProperty struct {
 // 消息包分装项
 type PackPackage struct {
 	// 消息总包数
-	PackageCount uint8
+	PackageCount uint16
 
 	// 包序号，由 1 开始
-	PackageIndex uint8
+	PackageIndex uint16
 }
 
 // 由二进制解析一个消息包的头部
@@ -63,7 +63,7 @@ func UnmarshalHeader(in []byte, v *PackHeader) error {
 	if i, err := readUint16(reader); err != nil {
 		return err
 	} else {
-		v.Property.BodyByteLength = i & 0x01ff
+		v.Property.BodyByteLength = i & 0x03ff
 		v.Property.IsEncrypted = ((i >> 10) & 0x01) == 0x01
 		v.Property.IsMultiplePackage = ((i >> 13) & 0x01) == 0x01
 	}
@@ -81,15 +81,18 @@ func UnmarshalHeader(in []byte, v *PackHeader) error {
 	}
 
 	if v.Property.IsMultiplePackage {
-		packPackage, err := readUint16(reader)
+		packPackagePtr := new(PackPackage)
 
-		if err != nil {
+		if i, err := readUint16(reader); err != nil {
 			return err
+		} else {
+			packPackagePtr.PackageCount = i
 		}
 
-		packPackagePtr := &PackPackage{
-			PackageCount: uint8(packPackage & 0xff),
-			PackageIndex: uint8((packPackage >> 2) & 0xff),
+		if i, err := readUint16(reader); err != nil {
+			return err
+		} else {
+			packPackagePtr.PackageIndex = i
 		}
 
 		v.Package = packPackagePtr
