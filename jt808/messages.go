@@ -5,9 +5,10 @@ import (
 )
 
 type MessagePack struct {
-	PackBody   PackBody
-	PackHeader PackHeader
-	Checksum   uint8
+	PackBody      PackBody
+	PackHeader    PackHeader
+	Checksum      uint8
+	ChecksumValid bool
 
 	bodyBuf       []byte
 	unmarshalFunc func([]byte) (PackBody, error)
@@ -27,7 +28,7 @@ func (ptr *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
 	}
 
 	// cleanup after unmarshal
-	ptr.bodyBuf = ptr.bodyBuf[:0]
+	ptr.bodyBuf = nil
 	ptr.unmarshalFunc = nil
 
 	return nil

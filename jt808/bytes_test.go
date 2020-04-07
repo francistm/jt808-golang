@@ -20,3 +20,11 @@ func TestUnescapeChars(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []byte{0x7e, 0x7e, 0x7d, 0x03, 0x04, 0x7e}, unescaped)
 }
+
+func TestComputeChecksum(t *testing.T)  {
+	b := []byte{0x01, 0x02, 0x03}
+	checksum, err := computeChecksum(b)
+
+	assert.NoError(t, err)
+	assert.Equal(t, byte(0x00), checksum)
+}

@@ -115,3 +115,33 @@ func unescapeChars(buf []byte) ([]byte, error) {
 
 	return writer.Bytes(), nil
 }
+
+func computeChecksum(buf []byte) (byte, error) {
+	var checksum byte
+	var isPrevByteRead bool
+
+	reader := bytes.NewReader(buf)
+
+	for {
+		var b byte
+		var err error
+
+		b, err = reader.ReadByte()
+
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return 0, err
+		}
+
+		if !isPrevByteRead {
+			checksum = b
+			isPrevByteRead = true
+			continue
+		}
+
+		checksum ^= b
+	}
+
+	return checksum, nil
+}

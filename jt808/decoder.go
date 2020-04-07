@@ -8,6 +8,8 @@ import (
 
 // 由二进制解析一个完整的消息包
 func Unmarshal(buf []byte, v *MessagePack) error {
+	var checksum byte
+
 	if buf[0] != 0x7e {
 		return errors.New(fmt.Sprintf("invalid prefix byte 0x%.2X", buf[0]))
 	}
@@ -22,6 +24,12 @@ func Unmarshal(buf []byte, v *MessagePack) error {
 		return err
 	} else {
 		buf = b
+	}
+
+	if c, err := computeChecksum(buf[0 : len(buf)-1]); err != nil {
+		return err
+	} else {
+		checksum = c
 	}
 
 	reader := bytes.NewReader(buf)
@@ -56,18 +64,18 @@ func Unmarshal(buf []byte, v *MessagePack) error {
 		return err
 	}
 
-	// update checksum in message pack, but didn't valid it
+	// update checksum in message pack
 	if b, err := reader.ReadByte(); err != nil {
 		return err
 	} else {
 		v.Checksum = b
+		v.ChecksumValid = b == checksum
 	}
 
 	return nil
 }
 
 func unmarshalBody(buf []byte, ptr *MessagePack) error {
-
 	var unmarshalFunc func([]byte) (PackBody, error)
 
 	switch ptr.PackHeader.MessageId {
@@ -88,7 +96,7 @@ func unmarshalBody(buf []byte, ptr *MessagePack) error {
 	}
 
 	// if this's a multiple package, dont' unmarshal it at this moment.
-	// store the body bytes and unmarshal function to messagePack struct,
+	// store the body bytes, unmarshal function to messagePack struct,
 	// and wait until `func (*MessagePack) ConcatAndUnmarshal` been called
 	if ptr.PackHeader.Property.IsMultiplePackage {
 		ptr.bodyBuf = buf
