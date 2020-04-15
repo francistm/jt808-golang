@@ -23,7 +23,7 @@ func TestMarshal0200(t *testing.T) {
 		Altitude:   40,
 		Speed:      6,
 		Direction:  0,
-		Time:       time.Unix(1539569410, 0),
+		Time:       time.Unix(1539569410, 0), // 2018-10-15 10:10:10 UTC
 		ExtraMessage: map[uint8][]byte{
 			0x01: {0x00, 0x00, 0x00, 0x64},
 			0x02: {0x00, 0x7d},

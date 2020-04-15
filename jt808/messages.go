@@ -138,7 +138,7 @@ func (b Body0200) marshalBody() ([]byte, error) {
 		return nil, err
 	}
 
-	timeStr := b.Time.Format(timeLayout)
+	timeStr := b.Time.In(locationCST).Format(timeLayout)
 	latitudeInt := uint32(b.Latitude * math.Pow(10, 6))
 	longitudeInt := uint32(b.Longitude * math.Pow(10, 6))
 	speedInt := uint16(b.Speed * 10)
