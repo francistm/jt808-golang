@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -168,7 +169,21 @@ func (b Body0200) marshalBody() ([]byte, error) {
 	}
 
 	if b.ExtraMessage != nil {
-		for dataId, dataContent := range b.ExtraMessage {
+		dataIdList := make([]uint8, 0, len(b.ExtraMessage))
+
+		// TODO try to avoid twice loop
+		for dataId := range b.ExtraMessage {
+			dataIdList = append(dataIdList, dataId)
+		}
+
+		// sort the map with dataId
+		// otherwise will get random extra data order in marshalled bytes
+		sort.SliceStable(dataIdList, func(i, j int) bool {
+			return dataIdList[i] < dataIdList[j]
+		})
+
+		for _, dataId := range dataIdList {
+			dataContent := b.ExtraMessage[dataId]
 			dataLength := uint8(len(dataContent))
 
 			buf.WriteByte(dataId)
