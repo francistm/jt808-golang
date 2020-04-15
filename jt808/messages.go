@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+var timeLayout = "060102150405"
 var locationCST = time.FixedZone("Asia/Shanghai", 8*3600)
 
 type MessagePack struct {
@@ -127,7 +128,56 @@ type Body0200 struct {
 }
 
 func (b Body0200) marshalBody() ([]byte, error) {
-	panic("implement me")
+	var buf bytes.Buffer
+
+	if err := writeUint32(b.WarnFlag, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint32(b.StatusFlag, &buf); err != nil {
+		return nil, err
+	}
+
+	timeStr := b.Time.Format(timeLayout)
+	latitudeInt := uint32(b.Latitude * math.Pow(10, 6))
+	longitudeInt := uint32(b.Longitude * math.Pow(10, 6))
+	speedInt := uint16(b.Speed * 10)
+
+	if err := writeUint32(latitudeInt, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint32(longitudeInt, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint16(b.Altitude, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint16(speedInt, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint16(b.Direction, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeBCD(timeStr, &buf); err != nil {
+		return nil, err
+	}
+
+	if b.ExtraMessage != nil {
+		for dataId, dataContent := range b.ExtraMessage {
+			dataLength := uint8(len(dataContent))
+
+			buf.WriteByte(dataId)
+			buf.WriteByte(dataLength)
+			buf.Write(dataContent)
+		}
+	}
+
+	return buf.Bytes(), nil
 }
 
 func unmarshalBody0200(buf []byte) (PackBody, error) {
@@ -179,7 +229,7 @@ func unmarshalBody0200(buf []byte) (PackBody, error) {
 	if s, err := readBCD(reader, 6); err != nil {
 		return nil, err
 	} else {
-		t, err := time.ParseInLocation("060102150405", s, locationCST)
+		t, err := time.ParseInLocation(timeLayout, s, locationCST)
 
 		if err != nil {
 			return nil, err

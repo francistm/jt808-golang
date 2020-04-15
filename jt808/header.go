@@ -2,6 +2,7 @@ package jt808
 
 import (
 	"bytes"
+	"encoding/binary"
 )
 
 // 消息体头部
@@ -34,6 +35,25 @@ type PackProperty struct {
 	IsMultiplePackage bool
 }
 
+func (ptr *PackProperty) marshal() ([]byte, error) {
+	var i uint16
+	out := make([]byte, 2)
+
+	i |= ptr.BodyByteLength
+
+	if ptr.IsEncrypted {
+		i |= 0x01 << 10
+	}
+
+	if ptr.IsMultiplePackage {
+		i |= 0x01 << 13
+	}
+
+	binary.BigEndian.PutUint16(out, i)
+
+	return out, nil
+}
+
 // 消息包分装项
 type PackPackage struct {
 	// 消息总包数
@@ -41,6 +61,30 @@ type PackPackage struct {
 
 	// 包序号，由 1 开始
 	CurrentIndex uint16
+}
+
+func marshalHeader(v *PackHeader) ([]byte, error) {
+	var buf bytes.Buffer
+
+	if err := writeUint16(v.MessageId, &buf); err != nil {
+		return nil, err
+	}
+
+	if b, err := v.Property.marshal(); err != nil {
+		return nil, err
+	} else if _, err = buf.Write(b); err != nil {
+		return nil, err
+	}
+
+	if err := writeBCD(v.TerminalMobileNo, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint16(v.SerialNo, &buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 // 由二进制解析一个消息包的头部

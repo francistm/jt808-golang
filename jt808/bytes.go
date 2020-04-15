@@ -3,6 +3,7 @@ package jt808
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -38,10 +39,36 @@ func readUint32(reader io.Reader) (uint32, error) {
 	return binary.BigEndian.Uint32(buf), nil
 }
 
+func writeBCD(s string, writer io.Writer) error {
+	b, err := hex.DecodeString(s)
+
+	if err != nil {
+		return err
+	}
+
+	if _, err := writer.Write(b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func writeUint16(i uint16, writer io.Writer) error {
 	b := make([]byte, 2)
 
 	binary.BigEndian.PutUint16(b, i)
+
+	if _, err := writer.Write(b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writeUint32(i uint32, writer io.Writer) error {
+	b := make([]byte, 4)
+
+	binary.BigEndian.PutUint32(b, i)
 
 	if _, err := writer.Write(b); err != nil {
 		return err
