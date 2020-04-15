@@ -83,6 +83,10 @@ func unmarshalBody(buf []byte, ptr *MessagePack) error {
 		unmarshalFunc = func(b []byte) (PackBody, error) {
 			return unmarshalBody0001(b)
 		}
+	case 0x0200:
+		unmarshalFunc = func(b []byte) (PackBody, error) {
+			return unmarshalBody0200(b)
+		}
 	case 0x0801:
 		unmarshalFunc = func(b []byte) (PackBody, error) {
 			return unmarshalBody0801(b)

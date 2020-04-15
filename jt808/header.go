@@ -37,10 +37,10 @@ type PackProperty struct {
 // 消息包分装项
 type PackPackage struct {
 	// 消息总包数
-	PackageCount uint16
+	TotalCount uint16
 
 	// 包序号，由 1 开始
-	PackageIndex uint16
+	CurrentIndex uint16
 }
 
 // 由二进制解析一个消息包的头部
@@ -86,13 +86,13 @@ func UnmarshalHeader(in []byte, v *PackHeader) error {
 		if i, err := readUint16(reader); err != nil {
 			return err
 		} else {
-			packPackagePtr.PackageCount = i
+			packPackagePtr.TotalCount = i
 		}
 
 		if i, err := readUint16(reader); err != nil {
 			return err
 		} else {
-			packPackagePtr.PackageIndex = i
+			packPackagePtr.CurrentIndex = i
 		}
 
 		v.Package = packPackagePtr

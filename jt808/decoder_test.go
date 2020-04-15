@@ -2,6 +2,7 @@ package jt808
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"github.com/stretchr/testify/assert"
 	"image"
@@ -65,62 +66,62 @@ func TestUnmarshal_PackagedMessage(t *testing.T) {
 	err = Unmarshal(b01, &m01)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m01.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(1), m01.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m01.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(1), m01.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m01.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b02, &m02)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m02.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(2), m02.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m02.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(2), m02.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m02.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b03, &m03)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m03.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(3), m03.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m03.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(3), m03.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m03.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b04, &m04)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m04.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(4), m04.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m04.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(4), m04.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m04.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b05, &m05)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m05.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(5), m05.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m05.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(5), m05.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m05.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b06, &m06)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m06.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(6), m06.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m06.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(6), m06.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m06.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b07, &m07)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m07.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(7), m07.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m07.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(7), m07.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m07.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b08, &m08)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m08.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(8), m08.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m08.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(8), m08.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m08.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b09, &m09)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m09.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(9), m09.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m09.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(9), m09.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m09.PackHeader.Package.TotalCount)
 
 	err = Unmarshal(b10, &m10)
 	assert.NoError(t, err)
 	assert.Equal(t, true, m10.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(10), m10.PackHeader.Package.PackageIndex)
-	assert.Equal(t, uint16(10), m10.PackHeader.Package.PackageCount)
+	assert.Equal(t, uint16(10), m10.PackHeader.Package.CurrentIndex)
+	assert.Equal(t, uint16(10), m10.PackHeader.Package.TotalCount)
 
 	err = m01.ConcatAndUnmarshal(&m02, &m03, &m04, &m05, &m06, &m07, &m08, &m09, &m10)
 	assert.NoError(t, err)
@@ -132,4 +133,21 @@ func TestUnmarshal_PackagedMessage(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 320, mediaContent.Bounds().Size().X)
 	assert.Equal(t, 240, mediaContent.Bounds().Size().Y)
+}
+
+func TestUnmarshal_Message0200(t *testing.T) {
+	var messagePack MessagePack
+	b := []byte{0x7e, 0x02, 0x00, 0x00, 0x26, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x22, 0xb8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0xba, 0x7f, 0x0e, 0x07, 0xe4, 0xf1, 0x1c, 0x00, 0x28, 0x00, 0x3c, 0x00, 0x00, 0x18, 0x07, 0x15, 0x10, 0x10, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00, 0x64, 0x02, 0x02, 0x00, 0x37, 0x57, 0x7e}
+	err := Unmarshal(b, &messagePack)
+
+	assert.NoError(t, err)
+	assert.Equal(t, uint16(0x0200), messagePack.PackHeader.MessageId)
+	assert.Equal(t, uint32(0x01), messagePack.PackBody.(Body0200).WarnFlag)
+	assert.Equal(t, uint32(0x02), messagePack.PackBody.(Body0200).StatusFlag)
+	assert.Equal(t, 12.222222, messagePack.PackBody.(Body0200).Latitude)
+	assert.Equal(t, 132.444444, messagePack.PackBody.(Body0200).Longitude)
+	assert.Equal(t, float32(6), messagePack.PackBody.(Body0200).Speed)
+
+	assert.Equal(t, uint32(100), binary.BigEndian.Uint32(messagePack.PackBody.(Body0200).ExtraMessage[0x01]))
+	assert.Equal(t, uint16(55), binary.BigEndian.Uint16(messagePack.PackBody.(Body0200).ExtraMessage[0x02]))
 }

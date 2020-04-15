@@ -2,7 +2,14 @@ package jt808
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"time"
 )
+
+var locationCST = time.FixedZone("Asia/Shanghai", 8*3600)
 
 type MessagePack struct {
 	PackBody      PackBody
@@ -17,8 +24,28 @@ type MessagePack struct {
 func (ptr *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
 	buf := bytes.NewBuffer(ptr.bodyBuf)
 
+	if ptr.PackHeader.Package == nil {
+		return errors.New("cannot concat packages without package property header")
+	}
+
+	concatPackageIndexList := make(map[uint16]bool)
+	concatPackageIndexList[ptr.PackHeader.Package.CurrentIndex] = true
+
 	for _, pack := range packs {
-		buf.Write(pack.bodyBuf)
+		if pack.PackHeader.Package == nil {
+			return errors.New("package to be concat doesn't have package property header")
+		}
+
+		if !concatPackageIndexList[pack.PackHeader.Package.CurrentIndex] {
+			buf.Write(pack.bodyBuf)
+			concatPackageIndexList[pack.PackHeader.Package.CurrentIndex] = true
+		}
+	}
+
+	for i := uint16(0); i < ptr.PackHeader.Package.TotalCount; i++ {
+		if concatPackageIndexList[i+1] == false {
+			return errors.New(fmt.Sprintf("missing package with index %d to concat and unmarshal message", i+1))
+		}
 	}
 
 	if packBody, err := ptr.unmarshalFunc(buf.Bytes()); err != nil {
@@ -62,14 +89,90 @@ func unmarshalBody0001(buf []byte) (body Body0001, err error) {
 }
 
 type Body0200 struct {
+	WarnFlag     uint32
+	StatusFlag   uint32
+	Latitude     float64
+	Longitude    float64
+	Altitude     uint16
+	Speed        float32
+	Direction    uint16
+	Time         time.Time
+	ExtraMessage map[uint8][]byte
 }
 
 func unmarshalBody0200(buf []byte) (body Body0200, err error) {
 	reader := bytes.NewReader(buf)
-	b := make([]byte, 28)
 
-	// TODO 实现0200消息解析
-	_, err = reader.Read(b)
+	if body.WarnFlag, err = readUint32(reader); err != nil {
+		return
+	}
+
+	if body.StatusFlag, err = readUint32(reader); err != nil {
+		return
+	}
+
+	if i, err := readUint32(reader); err != nil {
+		return body, err
+	} else {
+		body.Latitude = float64(i) / math.Pow(10, 6)
+	}
+
+	if i, err := readUint32(reader); err != nil {
+		return body, err
+	} else {
+		body.Longitude = float64(i) / math.Pow(10, 6)
+	}
+
+	if body.Altitude, err = readUint16(reader); err != nil {
+		return
+	}
+
+	if i, err := readUint16(reader); err != nil {
+		return body, err
+	} else {
+		body.Speed = float32(i) / 10
+	}
+
+	if body.Direction, err = readUint16(reader); err != nil {
+		return
+	}
+
+	if s, err := readBCD(reader, 6); err != nil {
+		return body, err
+	} else {
+		t, err := time.ParseInLocation("060102150405", s, locationCST)
+
+		if err != nil {
+			return body, err
+		}
+
+		body.Time = t
+	}
+
+	// read extra messages in 0200 (if have)
+	for {
+		extraDataId, err := reader.ReadByte()
+
+		if err == io.EOF {
+			break
+		}
+
+		if body.ExtraMessage == nil {
+			body.ExtraMessage = make(map[uint8][]byte)
+		}
+
+		extraDataLength, err := reader.ReadByte()
+
+		if err != nil {
+			return body, err
+		}
+
+		body.ExtraMessage[extraDataId] = make([]byte, extraDataLength)
+
+		if _, err := reader.Read(body.ExtraMessage[extraDataId]); err != nil {
+			return body, err
+		}
+	}
 
 	return
 }
