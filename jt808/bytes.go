@@ -38,6 +38,18 @@ func readUint32(reader io.Reader) (uint32, error) {
 	return binary.BigEndian.Uint32(buf), nil
 }
 
+func writeUint16(i uint16, writer io.Writer) error {
+	b := make([]byte, 2)
+
+	binary.BigEndian.PutUint16(b, i)
+
+	if _, err := writer.Write(b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // 消息发送前对消息中 0x7e, 0x7d 进行转义
 // 需先将消息体进行转义，然后在首位增加 0x7e 的标识位字节
 func escapeChars(buf []byte) ([]byte, error) {

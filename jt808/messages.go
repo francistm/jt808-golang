@@ -62,6 +62,7 @@ func (ptr *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
 }
 
 type PackBody interface {
+	marshalBody() ([]byte, error)
 }
 
 type Body0001 struct {
@@ -70,22 +71,47 @@ type Body0001 struct {
 	AcknowledgeType      uint8
 }
 
-func unmarshalBody0001(buf []byte) (body Body0001, err error) {
+func (b Body0001) marshalBody() ([]byte, error) {
+	var buf bytes.Buffer
+
+	if err := writeUint16(b.AcknowledgeSerialId, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := writeUint16(b.AcknowledgeMessageId, &buf); err != nil {
+		return nil, err
+	}
+
+	if err := buf.WriteByte(b.AcknowledgeType); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func unmarshalBody0001(buf []byte) (PackBody, error) {
+	var body Body0001
 	reader := bytes.NewReader(buf)
 
-	if body.AcknowledgeMessageId, err = readUint16(reader); err != nil {
-		return
+	if i, err := readUint16(reader); err != nil {
+		return nil, err
+	} else {
+		body.AcknowledgeMessageId = i
 	}
 
-	if body.AcknowledgeSerialId, err = readUint16(reader); err != nil {
-		return
+	if i, err := readUint16(reader); err != nil {
+		return nil, err
+	} else {
+		body.AcknowledgeSerialId = i
 	}
 
-	if body.AcknowledgeType, err = reader.ReadByte(); err != nil {
-		return
+	if i, err := reader.ReadByte(); err != nil {
+		return nil, err
+	} else {
+		body.AcknowledgeType = i
 	}
 
-	return
+	return body, nil
 }
 
 type Body0200 struct {
@@ -100,50 +126,63 @@ type Body0200 struct {
 	ExtraMessage map[uint8][]byte
 }
 
-func unmarshalBody0200(buf []byte) (body Body0200, err error) {
+func (b Body0200) marshalBody() ([]byte, error) {
+	panic("implement me")
+}
+
+func unmarshalBody0200(buf []byte) (PackBody, error) {
+	var body Body0200
 	reader := bytes.NewReader(buf)
 
-	if body.WarnFlag, err = readUint32(reader); err != nil {
-		return
-	}
-
-	if body.StatusFlag, err = readUint32(reader); err != nil {
-		return
+	if i, err := readUint32(reader); err != nil {
+		return nil, err
+	} else {
+		body.WarnFlag = i
 	}
 
 	if i, err := readUint32(reader); err != nil {
-		return body, err
+		return nil, err
+	} else {
+		body.StatusFlag = i
+	}
+
+	if i, err := readUint32(reader); err != nil {
+		return nil, err
 	} else {
 		body.Latitude = float64(i) / math.Pow(10, 6)
 	}
 
 	if i, err := readUint32(reader); err != nil {
-		return body, err
+		return nil, err
 	} else {
 		body.Longitude = float64(i) / math.Pow(10, 6)
 	}
 
-	if body.Altitude, err = readUint16(reader); err != nil {
-		return
+	if i, err := readUint16(reader); err != nil {
+		return nil, err
+	} else {
+		body.Altitude = i
 	}
 
 	if i, err := readUint16(reader); err != nil {
-		return body, err
+		return nil, err
 	} else {
 		body.Speed = float32(i) / 10
 	}
 
-	if body.Direction, err = readUint16(reader); err != nil {
-		return
+	if i, err := readUint16(reader); err != nil {
+		return nil, err
+	} else {
+		body.Direction = i
 	}
 
 	if s, err := readBCD(reader, 6); err != nil {
-		return body, err
+		return nil, err
 	} else {
 		t, err := time.ParseInLocation("060102150405", s, locationCST)
 
 		if err != nil {
-			return body, err
+			return nil, err
 		}
 
 		body.Time = t
@@ -164,17 +203,17 @@ func unmarshalBody0200(buf []byte) (body Body0200, err error) {
 		extraDataLength, err := reader.ReadByte()
 
 		if err != nil {
-			return body, err
+			return nil, err
 		}
 
 		body.ExtraMessage[extraDataId] = make([]byte, extraDataLength)
 
 		if _, err := reader.Read(body.ExtraMessage[extraDataId]); err != nil {
-			return body, err
+			return nil, err
 		}
 	}
 
-	return
+	return body, nil
 }
 
 type Body0801 struct {
@@ -187,44 +226,60 @@ type Body0801 struct {
 	MediaContent     []byte
 }
 
-func unmarshalBody0801(buf []byte) (body Body0801, err error) {
+func (b Body0801) marshalBody() ([]byte, error) {
+	panic("implement me")
+}
+
+func unmarshalBody0801(buf []byte) (PackBody, error) {
+	var body Body0801
 	reader := bytes.NewReader(buf)
 
 	var mediaContentBuf bytes.Buffer
+	var packBody0200Buf = make([]byte, 28)
 
-	if body.MediaId, err = readUint32(reader); err != nil {
-		return
+	if i, err := readUint32(reader); err != nil {
+		return nil, err
+	} else {
+		body.MediaId = i
 	}
 
-	if body.MediaType, err = reader.ReadByte(); err != nil {
-		return
+	if i, err := reader.ReadByte(); err != nil {
+		return nil, err
+	} else {
+		body.MediaType = i
 	}
 
-	if body.MediaContentType, err = reader.ReadByte(); err != nil {
-		return
+	if i, err := reader.ReadByte(); err != nil {
+		return nil, err
+	} else {
+		body.MediaContentType = i
 	}
 
-	if body.EventId, err = reader.ReadByte(); err != nil {
-		return
+	if i, err := reader.ReadByte(); err != nil {
+		return nil, err
+	} else {
+		body.EventId = i
 	}
 
-	if body.ChannelId, err = reader.ReadByte(); err != nil {
-		return
+	if i, err := reader.ReadByte(); err != nil {
+		return nil, err
+	} else {
+		body.ChannelId = i
 	}
 
-	packBody0200Buf := make([]byte, 28)
-
-	if _, err = reader.Read(packBody0200Buf); err != nil {
-		return
-	} else if body.PackBody0200, err = unmarshalBody0200(packBody0200Buf); err != nil {
-		return
+	if _, err := reader.Read(packBody0200Buf); err != nil {
+		return nil, err
+	} else if body0200, err := unmarshalBody0200(packBody0200Buf); err != nil {
+		return nil, err
+	} else {
+		body.PackBody0200 = body0200.(Body0200)
 	}
 
-	if _, err = reader.WriteTo(&mediaContentBuf); err != nil {
-		return
+	if _, err := reader.WriteTo(&mediaContentBuf); err != nil {
+		return nil, err
 	} else {
 		body.MediaContent = mediaContentBuf.Bytes()
 	}
 
-	return
+	return body, nil
 }
