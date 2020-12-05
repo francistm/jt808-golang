@@ -8,5 +8,5 @@ type Body0801 struct {
 	EventID          uint8         `jt808:""`
 	ChannelID        uint8         `jt808:""`
 	PackBody0200     *Body0200Base `jt808:""`
-	MediaContent     []byte        `jt808:""`
+	MediaContent     []byte        `jt808:",none"`
 }

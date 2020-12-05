@@ -59,15 +59,6 @@ func readBytes(reader io.Reader, byteLen int) ([]byte, error) {
 	return buf, nil
 }
 
-func drainReader(reader io.Reader) ([]byte, error) {
-	var buf []byte
-
-	b := bytes.NewBuffer(buf)
-	_, err := b.ReadFrom(reader)
-
-	return buf, err
-}
-
 func writeBCD(s string, writer io.Writer) error {
 	b, err := hex.DecodeString(s)
 

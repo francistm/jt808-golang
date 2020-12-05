@@ -18,6 +18,20 @@ type parsedTag struct {
 	fieldDataEncoding string
 }
 
+func (ptr *parsedTag) parseFieldDataLength(s string) error {
+	if len(s) == 0 {
+		return nil
+	}
+
+	i, err := strconv.ParseUint(s, 10, 8)
+
+	if err == nil {
+		ptr.fieldDataLength = int(i)
+	}
+
+	return err
+}
+
 func parseTag(tag string) (*parsedTag, error) {
 	t := &parsedTag{
 		fieldDataLength:   -1,
@@ -32,22 +46,15 @@ func parseTag(tag string) (*parsedTag, error) {
 
 	switch len(tags) {
 	case 1:
-		i, err := strconv.ParseUint(tags[0], 10, 8)
-
-		if err != nil {
+		if err := t.parseFieldDataLength(tags[0]); err != nil {
 			return nil, err
 		}
-
-		t.fieldDataLength = int(i)
 
 	case 2:
-		i, err := strconv.ParseUint(tags[0], 10, 8)
-
-		if err != nil {
+		if err := t.parseFieldDataLength(tags[0]); err != nil {
 			return nil, err
 		}
 
-		t.fieldDataLength = int(i)
 		t.fieldDataEncoding = tags[1]
 	}
 

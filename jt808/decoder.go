@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"reflect"
 
 	"github.com/francistm/jt808-golang/jt808/message"
@@ -124,7 +125,7 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 
 		case reflect.Slice:
 			if tag.fieldDataEncoding == tagEncodingNone {
-				readerValue, readerErr = drainReader(reader)
+				readerValue, readerErr = ioutil.ReadAll(reader)
 			} else {
 				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.fieldDataEncoding)
 			}
@@ -161,7 +162,11 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 
 		switch refReaderValue.Kind() {
 		case reflect.Ptr:
-			fieldValue.Set(reflect.ValueOf(refReaderValue.Elem().Interface()))
+			if fieldValue.Kind() == reflect.Ptr {
+				fieldValue.Set(reflect.ValueOf(refReaderValue.Interface()))
+			} else {
+				fieldValue.Set(reflect.ValueOf(refReaderValue.Elem().Interface()))
+			}
 
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.String, reflect.Slice:
 			fieldValue.Set(reflect.ValueOf(readerValue))

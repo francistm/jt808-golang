@@ -17,15 +17,15 @@ type MessagePack struct {
 }
 
 // ConcatAndUnmarshal 拼接多个分段消息并解析
-func (ptr *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
-	buf := bytes.NewBuffer(ptr.bodyBuf)
+func (messagePack *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
+	buf := bytes.NewBuffer(messagePack.bodyBuf)
 
-	if ptr.PackHeader.Package == nil {
+	if messagePack.PackHeader.Package == nil {
 		return errors.New("cannot concat packages without package property header")
 	}
 
 	concatPackageIndexList := make(map[uint16]bool)
-	concatPackageIndexList[ptr.PackHeader.Package.CurrentIndex] = true
+	concatPackageIndexList[messagePack.PackHeader.Package.CurrentIndex] = true
 
 	for _, pack := range packs {
 		if pack.PackHeader.Package == nil {
@@ -38,7 +38,7 @@ func (ptr *MessagePack) ConcatAndUnmarshal(packs ...*MessagePack) error {
 		}
 	}
 
-	for i := uint16(0); i < ptr.PackHeader.Package.TotalCount; i++ {
+	for i := uint16(0); i < messagePack.PackHeader.Package.TotalCount; i++ {
 		if concatPackageIndexList[i+1] == false {
 			return fmt.Errorf("missing package with index %d to concat and unmarshal message", i+1)
 		}

@@ -120,20 +120,27 @@ func TestUnmarshal_PackagedMessage(t *testing.T) {
 
 	err = Unmarshal(b10, &m10)
 	assert.NoError(t, err)
-	assert.Equal(t, true, m10.PackHeader.Property.IsMultiplePackage)
-	assert.Equal(t, uint16(10), m10.PackHeader.Package.CurrentIndex)
-	assert.Equal(t, uint16(10), m10.PackHeader.Package.TotalCount)
+	if err != nil {
+		assert.Equal(t, true, m10.PackHeader.Property.IsMultiplePackage)
+		assert.Equal(t, uint16(10), m10.PackHeader.Package.CurrentIndex)
+		assert.Equal(t, uint16(10), m10.PackHeader.Package.TotalCount)
+	}
 
 	err = m01.ConcatAndUnmarshal(&m02, &m03, &m04, &m05, &m06, &m07, &m08, &m09, &m10)
 	assert.NoError(t, err)
-	assert.Equal(t, byte(0x00), m01.PackBody.(*message.Body0801).MediaType)
-	assert.Equal(t, byte(0x00), m01.PackBody.(*message.Body0801).MediaContentType)
+	if err != nil {
+		assert.Equal(t, byte(0x00), m01.PackBody.(*message.Body0801).MediaType)
+		assert.Equal(t, byte(0x00), m01.PackBody.(*message.Body0801).MediaContentType)
+	}
 
 	mediaContentReader := bytes.NewReader(m01.PackBody.(*message.Body0801).MediaContent)
 	mediaContent, err = jpeg.Decode(mediaContentReader)
+
 	assert.NoError(t, err)
-	assert.Equal(t, 320, mediaContent.Bounds().Size().X)
-	assert.Equal(t, 240, mediaContent.Bounds().Size().Y)
+	if err == nil {
+		assert.Equal(t, 320, mediaContent.Bounds().Size().X)
+		assert.Equal(t, 240, mediaContent.Bounds().Size().Y)
+	}
 }
 
 func TestUnmarshal_Message0200(t *testing.T) {
@@ -159,6 +166,6 @@ func TestUnmarshal_Message0200(t *testing.T) {
 	}
 
 	if v, ok := extraMessage[0x02]; ok {
-		assert.Equal(t, uint16(055), binary.BigEndian.Uint16(v))
+		assert.Equal(t, uint16(55), binary.BigEndian.Uint16(v))
 	}
 }
