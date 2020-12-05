@@ -9,13 +9,15 @@ func Marshal(ptr *MessagePack) ([]byte, error) {
 	var buf bytes.Buffer
 	var bodyBytes []byte
 
-	b, err := ptr.PackBody.marshalBody()
+	/*
+		b, err := ptr.PackBody.marshalBody()
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	bodyBytes = b
+		bodyBytes = b
+	*/
 
 	ptr.PackHeader.Property.BodyByteLength = uint16(len(bodyBytes))
 

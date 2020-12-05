@@ -1,6 +1,7 @@
 package jt808
 
 import (
+	"github.com/francistm/jt808-golang/jt808/message"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -15,20 +16,27 @@ func TestMarshal0200(t *testing.T) {
 		SerialNo:         126,
 	}
 
-	messagePack.PackBody = Body0200{
-		WarnFlag:   1,
-		StatusFlag: 2,
-		Latitude:   12.222222,
-		Longitude:  132.444444,
-		Altitude:   40,
-		Speed:      6,
-		Direction:  0,
-		Time:       time.Unix(1539569410, 0), // 2018-10-15 10:10:10 UTC
-		ExtraMessage: map[uint8][]byte{
-			0x01: {0x00, 0x00, 0x00, 0x64},
-			0x02: {0x00, 0x7d},
+	body0200 := &message.Body0200{
+		Body0200Base: message.Body0200Base{
+			WarnFlag:   1,
+			StatusFlag: 2,
+			Altitude:   40,
+			Direction:  0,
 		},
+		// ExtraMessage: map[uint8][]byte{
+		// 	0x01: {0x00, 0x00, 0x00, 0x64},
+		// 	0x02: {0x00, 0x7d},
+		// },
 	}
+
+	utcTime := time.Unix(1539569410, 0) // 2018-10-15 10:10:10 UTC
+
+	body0200.SetLatitude(12.222222)
+	body0200.SetLongitude(12.222222)
+	body0200.SetSpeed(6)
+	body0200.SetTime(&utcTime)
+
+	messagePack.PackBody = body0200
 
 	b, err := Marshal(&messagePack)
 
