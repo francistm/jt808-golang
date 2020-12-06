@@ -83,6 +83,55 @@ func Unmarshal(buf []byte, messagePack *MessagePack) error {
 	return nil
 }
 
+// ConcatUnmarshal 拼接多个分段消息并解析
+func ConcatUnmarshal(packs ...*MessagePack) error {
+	if len(packs) < 2 {
+		return ConcatUnmarshalInvalidArgumentError
+	}
+
+	if packs[0].PackHeader.Package == nil {
+		return NotPackagedMessageError
+	}
+
+	var concatMesgBodyBytes []byte
+	lastMessagePack := packs[len(packs)-1]
+
+	totalCount := packs[0].PackHeader.Package.TotalCount
+	concatMesgs := make([]*MessagePack, totalCount, totalCount)
+
+	mesgId := packs[0].PackHeader.MessageID
+
+	for i := 0; i < len(packs)-1; i++ {
+		pack := packs[i]
+
+		if pack.PackHeader.Package == nil {
+			return NotPackagedMessageError
+		}
+
+		if pack.PackHeader.MessageID != mesgId {
+			return fmt.Errorf("message at %d is not type of %.4X", i+1, mesgId)
+		}
+
+		if _, ok := pack.PackBody.(*message.PartialPackBody); !ok {
+			return fmt.Errorf("message body at %d is not an PartialPackBody", i+1)
+		}
+
+		concatMesgs[pack.PackHeader.Package.CurrentIndex-1] = pack
+	}
+
+	for i := uint16(0); i < totalCount; i++ {
+		pack := concatMesgs[i]
+		body := pack.PackBody.(*message.PartialPackBody)
+		concatMesgBodyBytes = append(concatMesgBodyBytes, body.RawBody...)
+	}
+
+	lastMessagePack.PackHeader = packs[0].PackHeader
+	lastMessagePack.PackHeader.Package = nil
+	lastMessagePack.PackHeader.Property.BodyByteLength = uint16(len(concatMesgBodyBytes))
+
+	return lastMessagePack.unmarshalBody(concatMesgBodyBytes)
+}
+
 func unmarshalBody(reader io.Reader, packBody interface{}) error {
 	refMesgBodyType := reflect.TypeOf(packBody).Elem()
 	refMesgBodyValue := reflect.ValueOf(packBody).Elem()
@@ -170,8 +219,6 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.String, reflect.Slice:
 			fieldValue.Set(reflect.ValueOf(readerValue))
-
-		default:
 		}
 	}
 
@@ -181,15 +228,19 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 func (messagePack *MessagePack) unmarshalBody(buf []byte) error {
 	reader := bytes.NewReader(buf)
 
-	switch messagePack.PackHeader.MessageID {
-	case 0x0001:
-		messagePack.PackBody = new(message.Body0001)
-	case 0x0200:
-		messagePack.PackBody = new(message.Body0200)
-	case 0x0801:
-		messagePack.PackBody = new(message.Body0801)
-	default:
-		return fmt.Errorf("unsupported messageId: 0x%.4X", messagePack.PackHeader.MessageID)
+	if messagePack.PackHeader.Package != nil {
+		messagePack.PackBody = new(message.PartialPackBody)
+	} else {
+		switch messagePack.PackHeader.MessageID {
+		case 0x0001:
+			messagePack.PackBody = new(message.Body0001)
+		case 0x0200:
+			messagePack.PackBody = new(message.Body0200)
+		case 0x0801:
+			messagePack.PackBody = new(message.Body0801)
+		default:
+			return fmt.Errorf("unsupported messageId: 0x%.4X", messagePack.PackHeader.MessageID)
+		}
 	}
 
 	return unmarshalBody(reader, messagePack.PackBody)
