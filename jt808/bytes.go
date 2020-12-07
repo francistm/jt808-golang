@@ -19,6 +19,16 @@ func readBCD(reader io.Reader, byteLen int) (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
+func readUint8(reader io.Reader) (uint8, error) {
+	buf := make([]byte, 1)
+
+	if _, err := reader.Read(buf); err != nil {
+		return 0, err
+	}
+
+	return buf[0], nil
+}
+
 func readUint16(reader io.Reader) (uint16, error) {
 	buf := make([]byte, 2)
 
@@ -39,6 +49,16 @@ func readUint32(reader io.Reader) (uint32, error) {
 	return binary.BigEndian.Uint32(buf), nil
 }
 
+func readBytes(reader io.Reader, byteLen int) ([]byte, error) {
+	buf := make([]byte, byteLen)
+
+	if _, err := reader.Read(buf); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
 func writeBCD(s string, writer io.Writer) error {
 	b, err := hex.DecodeString(s)
 
@@ -51,6 +71,12 @@ func writeBCD(s string, writer io.Writer) error {
 	}
 
 	return nil
+}
+
+func writeUint8(i uint8, writer io.Writer) error {
+	_, err := writer.Write([]byte{i})
+
+	return err
 }
 
 func writeUint16(i uint16, writer io.Writer) error {
