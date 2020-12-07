@@ -63,7 +63,7 @@ func (b *Body0200) Time() *time.Time {
 }
 
 func (b *Body0200) SetTime(t *time.Time) {
-	b.RawTime = t.Format(timeLayout)
+	b.RawTime = t.In(locationCST).Format(timeLayout)
 }
 
 func (b *Body0200) ExtraMessage() (map[uint8][]byte, error) {
