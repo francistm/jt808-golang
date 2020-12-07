@@ -10,6 +10,7 @@ const (
 
 	tagEncodingAuto = "auto"
 	tagEncodingBCD  = "bcd"
+	tagEncodingGBK  = "gbk"
 	tagEncodingNone = "none"
 )
 
