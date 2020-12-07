@@ -73,6 +73,12 @@ func writeBCD(s string, writer io.Writer) error {
 	return nil
 }
 
+func writeUint8(i uint8, writer io.Writer) error {
+	_, err := writer.Write([]byte{i})
+
+	return err
+}
+
 func writeUint16(i uint16, writer io.Writer) error {
 	b := make([]byte, 2)
 

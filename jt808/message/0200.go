@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -12,7 +13,7 @@ type Body0200 struct {
 	Body0200Base
 	RawExtraMessage []byte `jt808:",none"`
 
-	parsedExtraMessage map[uint8][]byte
+	parsedExtraMessage map[uint8][]byte // cache parsed rawExtraMessage
 }
 
 type Body0200Base struct {
@@ -103,4 +104,41 @@ func (b *Body0200) ExtraMessage() (map[uint8][]byte, error) {
 	b.parsedExtraMessage = extraData
 
 	return extraData, nil
+}
+
+func (b *Body0200) SetExtraMessage(m map[uint8][]byte) error {
+	writer := new(bytes.Buffer)
+
+	dataIds := make([]uint8, 0, len(m))
+
+	for dataId := range m {
+		dataIds = append(dataIds, dataId)
+	}
+
+	sort.SliceStable(dataIds, func(i, j int) bool {
+		return dataIds[i] < dataIds[j]
+	})
+
+	for _, dataId := range dataIds {
+		data := m[dataId]
+		dataSize := uint8(len(data))
+
+		if err := writer.WriteByte(dataId); err != nil {
+			return err
+		}
+
+		if err := writer.WriteByte(dataSize); err != nil {
+			return err
+		}
+
+		if _, err := writer.Write(data); err != nil {
+			return err
+		}
+	}
+
+	// update cache
+	b.parsedExtraMessage = m
+	b.RawExtraMessage = writer.Bytes()
+
+	return nil
 }
