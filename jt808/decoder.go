@@ -1,3 +1,5 @@
+//go:generate go run github.com/francistm/jt808-golang/cmd/generator/decoder
+
 package jt808
 
 import (
@@ -223,25 +225,4 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 	}
 
 	return nil
-}
-
-func (messagePack *MessagePack) unmarshalBody(buf []byte) error {
-	reader := bytes.NewReader(buf)
-
-	if messagePack.PackHeader.Package != nil {
-		messagePack.PackBody = new(message.PartialPackBody)
-	} else {
-		switch messagePack.PackHeader.MessageID {
-		case 0x0001:
-			messagePack.PackBody = new(message.Body0001)
-		case 0x0200:
-			messagePack.PackBody = new(message.Body0200)
-		case 0x0801:
-			messagePack.PackBody = new(message.Body0801)
-		default:
-			return fmt.Errorf("unsupported messageId: 0x%.4X", messagePack.PackHeader.MessageID)
-		}
-	}
-
-	return unmarshalBody(reader, messagePack.PackBody)
 }
