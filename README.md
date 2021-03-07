@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/francistm/jt808-golang.svg?branch=master)](https://travis-ci.org/francistm/jt808-golang)
+[![Build Status](https://www.travis-ci.com/francistm/jt808-golang.svg?branch=master)](https://www.travis-ci.com/francistm/jt808-golang)
 
 部分实现和测试用例参考 <https://github.com/SmallChi/JT808>
 
