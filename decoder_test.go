@@ -8,7 +8,6 @@ import (
 	"image/jpeg"
 	"testing"
 
-	"github.com/francistm/jt808-golang/message"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,9 +19,9 @@ func TestUnmarshal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint16(0x0001), messagePack.PackHeader.MessageID)
 	assert.Equal(t, uint16(0x0005), messagePack.PackHeader.Property.BodyByteLength)
-	assert.Equal(t, uint16(0x1011), messagePack.PackBody.(*message.Body0001).AcknowledgeMessageID)
-	assert.Equal(t, uint16(0x1213), messagePack.PackBody.(*message.Body0001).AcknowledgeSerialID)
-	assert.Equal(t, uint8(0x14), messagePack.PackBody.(*message.Body0001).AcknowledgeType)
+	assert.Equal(t, uint16(0x1011), messagePack.PackBody.AsBody0001().AcknowledgeMessageID)
+	assert.Equal(t, uint16(0x1213), messagePack.PackBody.AsBody0001().AcknowledgeSerialID)
+	assert.Equal(t, uint8(0x14), messagePack.PackBody.AsBody0001().AcknowledgeType)
 	assert.Equal(t, uint8(0x2f), messagePack.Checksum)
 	assert.Equal(t, true, messagePack.ChecksumValid)
 }
@@ -129,11 +128,11 @@ func TestUnmarshal_PackagedMessage(t *testing.T) {
 	err = ConcatUnmarshal(&m01, &m02, &m03, &m04, &m05, &m06, &m07, &m08, &m09, &m10, &mFinal)
 	assert.NoError(t, err)
 	if err != nil {
-		assert.Equal(t, byte(0x00), mFinal.PackBody.(*message.Body0801).MediaType)
-		assert.Equal(t, byte(0x00), mFinal.PackBody.(*message.Body0801).MediaContentType)
+		assert.Equal(t, byte(0x00), mFinal.PackBody.AsBody0801().MediaType)
+		assert.Equal(t, byte(0x00), mFinal.PackBody.AsBody0801().MediaContentType)
 	}
 
-	mediaContentReader := bytes.NewReader(mFinal.PackBody.(*message.Body0801).MediaContent)
+	mediaContentReader := bytes.NewReader(mFinal.PackBody.AsBody0801().MediaContent)
 	mediaContent, err = jpeg.Decode(mediaContentReader)
 
 	assert.NoError(t, err)
@@ -150,13 +149,13 @@ func TestUnmarshal_Message0200(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, uint16(0x0200), messagePack.PackHeader.MessageID)
-	assert.Equal(t, uint32(0x01), messagePack.PackBody.(*message.Body0200).WarnFlag)
-	assert.Equal(t, uint32(0x02), messagePack.PackBody.(*message.Body0200).StatusFlag)
-	assert.Equal(t, 12.222222, messagePack.PackBody.(*message.Body0200).Latitude())
-	assert.Equal(t, 132.444444, messagePack.PackBody.(*message.Body0200).Longitude())
-	assert.Equal(t, float32(6), messagePack.PackBody.(*message.Body0200).Speed())
+	assert.Equal(t, uint32(0x01), messagePack.PackBody.AsBody0200().WarnFlag)
+	assert.Equal(t, uint32(0x02), messagePack.PackBody.AsBody0200().StatusFlag)
+	assert.Equal(t, 12.222222, messagePack.PackBody.AsBody0200().Latitude())
+	assert.Equal(t, 132.444444, messagePack.PackBody.AsBody0200().Longitude())
+	assert.Equal(t, float32(6), messagePack.PackBody.AsBody0200().Speed())
 
-	extraMessage, err := messagePack.PackBody.(*message.Body0200).ExtraMessage()
+	extraMessage, err := messagePack.PackBody.AsBody0200().ExtraMessage()
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(extraMessage))

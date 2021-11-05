@@ -88,18 +88,18 @@ func Unmarshal(buf []byte, messagePack *MessagePack) error {
 // ConcatUnmarshal 拼接多个分段消息并解析
 func ConcatUnmarshal(packs ...*MessagePack) error {
 	if len(packs) < 2 {
-		return ConcatUnmarshalInvalidArgumentError
+		return ErrConcatUnmarshalInvalidArgument
 	}
 
 	if packs[0].PackHeader.Package == nil {
-		return NotPackagedMessageError
+		return ErrNotPackagedMessage
 	}
 
 	var concatMesgBodyBytes []byte
 	lastMessagePack := packs[len(packs)-1]
 
 	totalCount := packs[0].PackHeader.Package.TotalCount
-	concatMesgs := make([]*MessagePack, totalCount, totalCount)
+	concatMesgs := make([]*MessagePack, totalCount)
 
 	mesgId := packs[0].PackHeader.MessageID
 
@@ -107,14 +107,14 @@ func ConcatUnmarshal(packs ...*MessagePack) error {
 		pack := packs[i]
 
 		if pack.PackHeader.Package == nil {
-			return NotPackagedMessageError
+			return ErrNotPackagedMessage
 		}
 
 		if pack.PackHeader.MessageID != mesgId {
 			return fmt.Errorf("message at %d is not type of %.4X", i+1, mesgId)
 		}
 
-		if _, ok := pack.PackBody.(*message.PartialPackBody); !ok {
+		if _, ok := pack.PackBody.body.(*message.PartialPackBody); !ok {
 			return fmt.Errorf("message body at %d is not an PartialPackBody", i+1)
 		}
 
@@ -123,7 +123,7 @@ func ConcatUnmarshal(packs ...*MessagePack) error {
 
 	for i := uint16(0); i < totalCount; i++ {
 		pack := concatMesgs[i]
-		body := pack.PackBody.(*message.PartialPackBody)
+		body := pack.PackBody.body.(*message.PartialPackBody)
 		concatMesgBodyBytes = append(concatMesgBodyBytes, body.RawBody...)
 	}
 

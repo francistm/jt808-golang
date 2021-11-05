@@ -1,7 +1,8 @@
 package main
 
 import (
-	"os"
+	"bytes"
+	"io/ioutil"
 
 	. "github.com/dave/jennifer/jen"
 	"github.com/francistm/jt808-golang/internal/generator"
@@ -21,8 +22,8 @@ func main() {
 	for _, messageStruct := range messageStructs {
 		code := Case(Lit(messageStruct.HeaderID)).
 			Block(
-				Id("messagePack").
-					Dot("PackBody").
+				Id("packBody").
+					Dot("body").
 					Op("=").
 					New(Id("message").Dot(messageStruct.Name)),
 			)
@@ -51,32 +52,31 @@ func main() {
 		Error().
 		Block(
 			Id("reader").Op(":=").Qual("bytes", "NewReader").Call(Id("buf")),
+			Id("packBody").Op(":=").New(Id("PackBody")),
 			Line(),
 			If(Id("messagePack").Dot("PackHeader").Dot("Package").Op("!=").Nil()).Block(
-				Id("messagePack").Dot("PackBody").Op("=").New(Qual("github.com/francistm/jt808-golang/message", "PartialPackBody")),
+				Id("packBody").Dot("body").Op("=").New(Qual("github.com/francistm/jt808-golang/message", "PartialPackBody")),
 			).Else().Block(
 				Switch(Id("messagePack").Dot("PackHeader").Dot("MessageID")).Block(messagePackCaseList...),
 			),
 			Line(),
+			Id("messagePack").Dot("PackBody").Op("=").Id("packBody"),
+			Line(),
 			Return(
 				Id("unmarshalBody").Call(
 					Id("reader"),
-					Id("messagePack").Dot("PackBody"),
+					Id("packBody").Dot("body"),
 				),
 			),
 		)
 
-	outputFile, err := os.OpenFile("decode_gen.go", os.O_CREATE|os.O_RDWR, 0644)
+	buf := new(bytes.Buffer)
 
-	if err != nil {
+	if err := f.Render(buf); err != nil {
 		panic(err)
 	}
 
-	defer func() {
-		_ = outputFile.Close()
-	}()
-
-	if err := f.Render(outputFile); err != nil {
+	if err := ioutil.WriteFile("decoder.gen.go", buf.Bytes(), 0644); err != nil {
 		panic(err)
 	}
 }

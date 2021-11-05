@@ -37,7 +37,9 @@ func TestMarshal0200(t *testing.T) {
 		0x02: {0x00, 0x7d},
 	})
 
-	messagePack.PackBody = body0200
+	messagePack.PackBody = &PackBody{
+		body: body0200,
+	}
 
 	b, err := Marshal(&messagePack)
 

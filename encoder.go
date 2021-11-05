@@ -120,7 +120,7 @@ func (messagePack *MessagePack) marshalBody() ([]byte, error) {
 	packBody := messagePack.PackBody
 	bodyBytesWriter := new(bytes.Buffer)
 
-	if err := marshalBody(bodyBytesWriter, packBody); err != nil {
+	if err := marshalBody(bodyBytesWriter, packBody.body); err != nil {
 		return nil, err
 	}
 

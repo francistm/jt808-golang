@@ -10,24 +10,27 @@ import (
 
 func (messagePack *MessagePack) unmarshalBody(buf []byte) error {
 	reader := bytes.NewReader(buf)
+	packBody := new(PackBody)
 
 	if messagePack.PackHeader.Package != nil {
-		messagePack.PackBody = new(message.PartialPackBody)
+		packBody.body = new(message.PartialPackBody)
 	} else {
 		switch messagePack.PackHeader.MessageID {
-		case uint16(0x801):
-			messagePack.PackBody = new(message.Body0801)
-
 		case uint16(0x1):
-			messagePack.PackBody = new(message.Body0001)
+			packBody.body = new(message.Body0001)
 
 		case uint16(0x200):
-			messagePack.PackBody = new(message.Body0200)
+			packBody.body = new(message.Body0200)
+
+		case uint16(0x801):
+			packBody.body = new(message.Body0801)
 
 		default:
 			return fmt.Errorf("unsupported messageId: 0x%.4X", messagePack.PackHeader.MessageID)
 		}
 	}
 
-	return unmarshalBody(reader, messagePack.PackBody)
+	messagePack.PackBody = packBody
+
+	return unmarshalBody(reader, packBody.body)
 }
