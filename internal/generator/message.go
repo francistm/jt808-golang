@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-var structNameRegex = regexp.MustCompile("^Body(\\d+)$")
+var structNameRegex = regexp.MustCompile(`^Body(\d+)$`)
 
 type MessageStruct struct {
 	Name     string
@@ -40,7 +40,7 @@ func buildMessageStructFromName(structName string) (*MessageStruct, error) {
 func GetAllMessageStructs() ([]*MessageStruct, error) {
 	var messageStructs []*MessageStruct
 	fileSet := token.NewFileSet()
-	pkgMap, err := parser.ParseDir(fileSet, "jt808/message", nil, 0)
+	pkgMap, err := parser.ParseDir(fileSet, "message", nil, 0)
 
 	if err != nil {
 		return nil, err

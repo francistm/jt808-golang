@@ -1,4 +1,4 @@
-//go:generate go run github.com/francistm/jt808-golang/cmd/generator/decoder
+//go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
 
 package jt808
 
@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"reflect"
 
-	"github.com/francistm/jt808-golang/jt808/message"
+	"github.com/francistm/jt808-golang/message"
 )
 
 // Unmarshal 由二进制解析一个完整的消息包

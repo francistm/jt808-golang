@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/francistm/jt808-golang/jt808/message"
-	"github.com/stretchr/testify/assert"
 	"image"
 	"image/jpeg"
 	"testing"
+
+	"github.com/francistm/jt808-golang/message"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshal(t *testing.T) {

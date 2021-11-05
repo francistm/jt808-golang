@@ -1,10 +1,11 @@
 package jt808
 
 import (
-	"github.com/francistm/jt808-golang/jt808/message"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/francistm/jt808-golang/message"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMarshal0200(t *testing.T) {
