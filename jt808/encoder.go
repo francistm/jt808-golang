@@ -4,15 +4,18 @@ import (
 	"bytes"
 )
 
+// Marshal 编译一个消息体到字节数组
 func Marshal(ptr *MessagePack) ([]byte, error) {
 	var buf bytes.Buffer
 	var bodyBytes []byte
 
-	if b, err := ptr.PackBody.marshalBody(); err != nil {
+	b, err := ptr.PackBody.marshalBody()
+
+	if err != nil {
 		return nil, err
-	} else {
-		bodyBytes = b
 	}
+
+	bodyBytes = b
 
 	ptr.PackHeader.Property.BodyByteLength = uint16(len(bodyBytes))
 
@@ -32,19 +35,21 @@ func Marshal(ptr *MessagePack) ([]byte, error) {
 		return nil, err
 	}
 
-	if escapedBytes, err := escapeChars(buf.Bytes()); err != nil {
+	escapedBytes, err := escapeChars(buf.Bytes())
+
+	if err != nil {
 		return nil, err
-	} else {
-		var finalBuf bytes.Buffer
-
-		finalBuf.WriteByte(0x7e)
-
-		if _, err := finalBuf.Write(escapedBytes); err != nil {
-			return nil, err
-		}
-
-		finalBuf.WriteByte(0x7e)
-
-		return finalBuf.Bytes(), nil
 	}
+
+	var finalBuf bytes.Buffer
+
+	finalBuf.WriteByte(0x7e)
+
+	if _, err := finalBuf.Write(escapedBytes); err != nil {
+		return nil, err
+	}
+
+	finalBuf.WriteByte(0x7e)
+
+	return finalBuf.Bytes(), nil
 }

@@ -16,10 +16,10 @@ func TestUnmarshal(t *testing.T) {
 	err := Unmarshal(b, &messagePack)
 
 	assert.NoError(t, err)
-	assert.Equal(t, uint16(0x0001), messagePack.PackHeader.MessageId)
+	assert.Equal(t, uint16(0x0001), messagePack.PackHeader.MessageID)
 	assert.Equal(t, uint16(0x0005), messagePack.PackHeader.Property.BodyByteLength)
-	assert.Equal(t, uint16(0x1011), messagePack.PackBody.(Body0001).AcknowledgeMessageId)
-	assert.Equal(t, uint16(0x1213), messagePack.PackBody.(Body0001).AcknowledgeSerialId)
+	assert.Equal(t, uint16(0x1011), messagePack.PackBody.(Body0001).AcknowledgeMessageID)
+	assert.Equal(t, uint16(0x1213), messagePack.PackBody.(Body0001).AcknowledgeSerialID)
 	assert.Equal(t, uint8(0x14), messagePack.PackBody.(Body0001).AcknowledgeType)
 	assert.Equal(t, uint8(0x2f), messagePack.Checksum)
 	assert.Equal(t, true, messagePack.ChecksumValid)
@@ -141,7 +141,7 @@ func TestUnmarshal_Message0200(t *testing.T) {
 	err := Unmarshal(b, &messagePack)
 
 	assert.NoError(t, err)
-	assert.Equal(t, uint16(0x0200), messagePack.PackHeader.MessageId)
+	assert.Equal(t, uint16(0x0200), messagePack.PackHeader.MessageID)
 	assert.Equal(t, uint32(0x01), messagePack.PackBody.(Body0200).WarnFlag)
 	assert.Equal(t, uint32(0x02), messagePack.PackBody.(Body0200).StatusFlag)
 	assert.Equal(t, 12.222222, messagePack.PackBody.(Body0200).Latitude)

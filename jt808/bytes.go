@@ -138,17 +138,19 @@ func unescapeChars(buf []byte) ([]byte, error) {
 			continue
 		}
 
-		if nextByte, err := reader.ReadByte(); err != nil {
+		nextByte, err := reader.ReadByte()
+
+		if err != nil {
 			return nil, err
-		} else {
-			switch nextByte {
-			case 0x01:
-				writer.WriteByte(0x7d)
-			case 0x02:
-				writer.WriteByte(0x7e)
-			default:
-				return nil, errors.New("invalid char after 0x7e when unescape")
-			}
+		}
+
+		switch nextByte {
+		case 0x01:
+			writer.WriteByte(0x7d)
+		case 0x02:
+			writer.WriteByte(0x7e)
+		default:
+			return nil, errors.New("invalid char after 0x7e when unescape")
 		}
 	}
 

@@ -2,35 +2,36 @@ package jt808
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 )
 
-// 由二进制解析一个完整的消息包
+// Unmarshal 由二进制解析一个完整的消息包
 func Unmarshal(buf []byte, v *MessagePack) error {
 	var checksum byte
 
 	if buf[0] != 0x7e {
-		return errors.New(fmt.Sprintf("invalid prefix byte 0x%.2X", buf[0]))
+		return fmt.Errorf("invalid prefix byte 0x%.2X", buf[0])
 	}
 
 	if buf[len(buf)-1] != 0x7e {
-		return errors.New(fmt.Sprintf("invalid suffix byte 0x%.2X", buf[0]))
+		return fmt.Errorf("invalid suffix byte 0x%.2X", buf[0])
 	}
 
 	buf = buf[1 : len(buf)-1]
 
-	if b, err := unescapeChars(buf); err != nil {
+	buf, err := unescapeChars(buf)
+
+	if err != nil {
 		return err
-	} else {
-		buf = b
 	}
 
-	if c, err := computeChecksum(buf[0 : len(buf)-1]); err != nil {
+	c, err := computeChecksum(buf[0 : len(buf)-1])
+
+	if err != nil {
 		return err
-	} else {
-		checksum = c
 	}
+
+	checksum = c
 
 	reader := bytes.NewReader(buf)
 
@@ -65,12 +66,14 @@ func Unmarshal(buf []byte, v *MessagePack) error {
 	}
 
 	// update checksum in message pack
-	if b, err := reader.ReadByte(); err != nil {
+	bs, err := reader.ReadByte()
+
+	if err != nil {
 		return err
-	} else {
-		v.Checksum = b
-		v.ChecksumValid = b == checksum
 	}
+
+	v.Checksum = bs
+	v.ChecksumValid = bs == checksum
 
 	return nil
 }
@@ -78,7 +81,7 @@ func Unmarshal(buf []byte, v *MessagePack) error {
 func unmarshalBody(buf []byte, ptr *MessagePack) error {
 	var unmarshalFunc func([]byte) (PackBody, error)
 
-	switch ptr.PackHeader.MessageId {
+	switch ptr.PackHeader.MessageID {
 	case 0x0001:
 		unmarshalFunc = func(b []byte) (PackBody, error) {
 			return unmarshalBody0001(b)
@@ -92,11 +95,11 @@ func unmarshalBody(buf []byte, ptr *MessagePack) error {
 			return unmarshalBody0801(b)
 		}
 	default:
-		return errors.New(fmt.Sprintf("unsupported messageId: 0x%.4X", ptr.PackHeader.MessageId))
+		return fmt.Errorf("unsupported messageId: 0x%.4X", ptr.PackHeader.MessageID)
 	}
 
 	if unmarshalFunc == nil {
-		return errors.New(fmt.Sprintf("missing unmarshal function for messageId: 0x%.4X", ptr.PackHeader.MessageId))
+		return fmt.Errorf("missing unmarshal function for messageId: 0x%.4X", ptr.PackHeader.MessageID)
 	}
 
 	// if this's a multiple package, dont' unmarshal it at this moment.

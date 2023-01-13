@@ -10,7 +10,7 @@ func TestMarshal0200(t *testing.T) {
 	var messagePack MessagePack
 
 	messagePack.PackHeader = PackHeader{
-		MessageId:        0x0200,
+		MessageID:        0x0200,
 		TerminalMobileNo: "123456789012",
 		SerialNo:         126,
 	}

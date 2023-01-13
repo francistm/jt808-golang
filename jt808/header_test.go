@@ -12,7 +12,7 @@ func TestUnmarshalHeader(t *testing.T) {
 	err := UnmarshalHeader(packHeaderBytes, &packHeader)
 
 	assert.NoError(t, err)
-	assert.Equal(t, uint16(0x0102), packHeader.MessageId)
+	assert.Equal(t, uint16(0x0102), packHeader.MessageID)
 	assert.Equal(t, uint16(0x0005), packHeader.Property.BodyByteLength)
 	assert.Equal(t, false, packHeader.Property.IsEncrypted)
 	assert.Equal(t, false, packHeader.Property.IsMultiplePackage)

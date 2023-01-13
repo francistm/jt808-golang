@@ -5,10 +5,10 @@ import (
 	"encoding/binary"
 )
 
-// 消息体头部
+// PackHeader 消息体头部
 type PackHeader struct {
 	// 消息 ID
-	MessageId uint16
+	MessageID uint16
 
 	// 消息体属性
 	Property PackProperty
@@ -23,7 +23,7 @@ type PackHeader struct {
 	Package *PackPackage
 }
 
-// 消息体属性
+// PackProperty 消息体属性
 type PackProperty struct {
 	// 消息体长度
 	BodyByteLength uint16
@@ -54,7 +54,7 @@ func (ptr *PackProperty) marshal() ([]byte, error) {
 	return out, nil
 }
 
-// 消息包分装项
+// PackPackage 消息包分装项
 type PackPackage struct {
 	// 消息总包数
 	TotalCount uint16
@@ -66,7 +66,7 @@ type PackPackage struct {
 func marshalHeader(v *PackHeader) ([]byte, error) {
 	var buf bytes.Buffer
 
-	if err := writeUint16(v.MessageId, &buf); err != nil {
+	if err := writeUint16(v.MessageID, &buf); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func marshalHeader(v *PackHeader) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 由二进制解析一个消息包的头部
+// UnmarshalHeader 由二进制解析一个消息包的头部
 // 如果起始字节为 0x7e 则跳过该字节
 func UnmarshalHeader(in []byte, v *PackHeader) error {
 	reader := bytes.NewReader(in)
@@ -98,46 +98,57 @@ func UnmarshalHeader(in []byte, v *PackHeader) error {
 		_ = reader.UnreadByte()
 	}
 
-	if i, err := readUint16(reader); err != nil {
+	i, err := readUint16(reader)
+
+	if err != nil {
 		return err
-	} else {
-		v.MessageId = i
 	}
 
-	if i, err := readUint16(reader); err != nil {
+	v.MessageID = i
+
+	i, err = readUint16(reader)
+
+	if err != nil {
 		return err
-	} else {
-		v.Property.BodyByteLength = i & 0x03ff
-		v.Property.IsEncrypted = ((i >> 10) & 0x01) == 0x01
-		v.Property.IsMultiplePackage = ((i >> 13) & 0x01) == 0x01
 	}
 
-	if s, err := readBCD(reader, 6); err != nil {
+	v.Property.BodyByteLength = i & 0x03ff
+	v.Property.IsEncrypted = ((i >> 10) & 0x01) == 0x01
+	v.Property.IsMultiplePackage = ((i >> 13) & 0x01) == 0x01
+
+	s, err := readBCD(reader, 6)
+
+	if err != nil {
 		return err
-	} else {
-		v.TerminalMobileNo = s
 	}
 
-	if i, err := readUint16(reader); err != nil {
+	v.TerminalMobileNo = s
+
+	i, err = readUint16(reader)
+
+	if err != nil {
 		return err
-	} else {
-		v.SerialNo = i
 	}
+
+	v.SerialNo = i
 
 	if v.Property.IsMultiplePackage {
 		packPackagePtr := new(PackPackage)
 
-		if i, err := readUint16(reader); err != nil {
+		i, err := readUint16(reader)
+
+		if err != nil {
 			return err
-		} else {
-			packPackagePtr.TotalCount = i
+		}
+		packPackagePtr.TotalCount = i
+
+		i, err = readUint16(reader)
+
+		if err != nil {
+			return err
 		}
 
-		if i, err := readUint16(reader); err != nil {
-			return err
-		} else {
-			packPackagePtr.CurrentIndex = i
-		}
+		packPackagePtr.CurrentIndex = i
 
 		v.Package = packPackagePtr
 	}
