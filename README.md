@@ -26,11 +26,11 @@ type Body0001 struct {
 |string     |string      |n,gbk   |
 
 ## 复杂类型解析
-见 [./jt808/message/0200.go](https://github.com/francistm/jt808-golang/blob/c02868ec780de98aa3301ac24308a25532f2a7f6/jt808/message/0200.go) 。先将消息解析为 []byte 类型，然后在结构体中增加方法单独解析。 
+见 [./jt808/message/0200.go](https://github.com/francistm/jt808-golang/blob/c02868ec780de98aa3301ac24308a25532f2a7f6/jt808/message/0200.go) 。先将消息解析为 []byte 类型，然后在结构体中增加方法单独解析。
 
 ## 分包消息解析
 如果消息头部中包含分包信息`MessagePack.Package`，则消息正文会被解析为`message.PartialPackBody`。
-待消息全部接收完成后，使用 `jt808.ConcatUnmarshal(...packs *MessagePack)` 方法一并进行解析。
+待消息全部接收完成后，使用 `jt808.ConcatUnmarshal(packs []*MessagePack[*message.PartialPackBody], target *MessagePack[T])` 方法一并进行解析。
 
 详情见 [./jt808/decoder_test.go:40](https://github.com/francistm/jt808-golang/blob/c02868ec780de98aa3301ac24308a25532f2a7f6/jt808/decoder_test.go#L40) 中的测试用例。
 

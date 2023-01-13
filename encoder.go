@@ -7,8 +7,10 @@ import (
 	"reflect"
 )
 
+//go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
+
 // Marshal 编译一个消息体到字节数组
-func Marshal(ptr *MessagePack) ([]byte, error) {
+func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 	var buf bytes.Buffer
 
 	bodyBytes, err := ptr.marshalBody()
@@ -54,7 +56,7 @@ func Marshal(ptr *MessagePack) ([]byte, error) {
 	return finalBuf.Bytes(), nil
 }
 
-func marshalBody(writer io.Writer, packBody interface{}) error {
+func marshalBody[T any](writer io.Writer, packBody T) error {
 	refMesgBodyType := reflect.TypeOf(packBody).Elem()
 	refMesgBodyValue := reflect.ValueOf(packBody).Elem()
 
@@ -116,11 +118,10 @@ func marshalBody(writer io.Writer, packBody interface{}) error {
 	return nil
 }
 
-func (messagePack *MessagePack) marshalBody() ([]byte, error) {
-	packBody := messagePack.PackBody
+func (messagePack *MessagePack[T]) marshalBody() ([]byte, error) {
 	bodyBytesWriter := new(bytes.Buffer)
 
-	if err := marshalBody(bodyBytesWriter, packBody.body); err != nil {
+	if err := marshalBody(bodyBytesWriter, messagePack.PackBody); err != nil {
 		return nil, err
 	}
 

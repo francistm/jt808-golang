@@ -1,5 +1,3 @@
-//go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
-
 package jt808
 
 import (
@@ -8,12 +6,15 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"sort"
 
 	"github.com/francistm/jt808-golang/message"
 )
 
+//go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
+
 // Unmarshal 由二进制解析一个完整的消息包
-func Unmarshal(buf []byte, messagePack *MessagePack) error {
+func Unmarshal[T any](buf []byte, target *MessagePack[T]) error {
 	var checksum byte
 
 	if buf[0] != 0x7e {
@@ -49,26 +50,26 @@ func Unmarshal(buf []byte, messagePack *MessagePack) error {
 		return err
 	}
 
-	if err := UnmarshalHeader(headerBuf, &messagePack.PackHeader); err != nil {
+	if err := UnmarshalHeader(headerBuf, &target.PackHeader); err != nil {
 		return err
 	}
 
 	// is not a multiple package, reverse reader 4 bytes back because there's no package bytes
-	if !messagePack.PackHeader.Property.IsMultiplePackage {
+	if !target.PackHeader.Property.IsMultiplePackage {
 		for i := 0; i < 4; i++ {
 			_ = reader.UnreadByte()
 		}
 	}
 
 	// read bytes according header body data length
-	bodyBuf := make([]byte, messagePack.PackHeader.Property.BodyByteLength)
+	bodyBuf := make([]byte, target.PackHeader.Property.BodyByteLength)
 
 	if _, err := reader.Read(bodyBuf); err != nil {
 		return err
 	}
 
 	// update PackBody field from readed bytes to struct
-	if err := messagePack.unmarshalBody(bodyBuf); err != nil {
+	if err := target.unmarshalBody(bodyBuf); err != nil {
 		return err
 	}
 
@@ -79,14 +80,14 @@ func Unmarshal(buf []byte, messagePack *MessagePack) error {
 		return err
 	}
 
-	messagePack.Checksum = bs
-	messagePack.ChecksumValid = bs == checksum
+	target.Checksum = bs
+	target.ChecksumValid = bs == checksum
 
 	return nil
 }
 
 // ConcatUnmarshal 拼接多个分段消息并解析
-func ConcatUnmarshal(packs ...*MessagePack) error {
+func ConcatUnmarshal(packs []*MessagePack[*message.PartialPackBody], target *MessagePack[any]) error {
 	if len(packs) < 2 {
 		return ErrConcatUnmarshalInvalidArgument
 	}
@@ -95,17 +96,25 @@ func ConcatUnmarshal(packs ...*MessagePack) error {
 		return ErrNotPackagedMessage
 	}
 
-	var concatMesgBodyBytes []byte
-	lastMessagePack := packs[len(packs)-1]
+	var (
+		mesgBodyBuf bytes.Buffer
+		mesgId      = packs[0].PackHeader.MessageID
+	)
 
-	totalCount := packs[0].PackHeader.Package.TotalCount
-	concatMesgs := make([]*MessagePack, totalCount)
+	sort.Slice(packs, func(i, j int) bool {
+		var (
+			packsLeft  = packs[i]
+			packsRight = packs[j]
+		)
 
-	mesgId := packs[0].PackHeader.MessageID
+		if packsLeft.PackHeader.Package == nil {
+			return false
+		}
 
-	for i := 0; i < len(packs)-1; i++ {
-		pack := packs[i]
+		return packsLeft.PackHeader.Package.CurrentIndex < packsRight.PackHeader.Package.CurrentIndex
+	})
 
+	for i, pack := range packs {
 		if pack.PackHeader.Package == nil {
 			return ErrNotPackagedMessage
 		}
@@ -114,24 +123,14 @@ func ConcatUnmarshal(packs ...*MessagePack) error {
 			return fmt.Errorf("message at %d is not type of %.4X", i+1, mesgId)
 		}
 
-		if _, ok := pack.PackBody.body.(*message.PartialPackBody); !ok {
-			return fmt.Errorf("message body at %d is not an PartialPackBody", i+1)
-		}
-
-		concatMesgs[pack.PackHeader.Package.CurrentIndex-1] = pack
+		mesgBodyBuf.Write(pack.PackBody.RawBody)
 	}
 
-	for i := uint16(0); i < totalCount; i++ {
-		pack := concatMesgs[i]
-		body := pack.PackBody.body.(*message.PartialPackBody)
-		concatMesgBodyBytes = append(concatMesgBodyBytes, body.RawBody...)
-	}
+	target.PackHeader = packs[0].PackHeader
+	target.PackHeader.Package = nil
+	target.PackHeader.Property.BodyByteLength = uint16(mesgBodyBuf.Len())
 
-	lastMessagePack.PackHeader = packs[0].PackHeader
-	lastMessagePack.PackHeader.Package = nil
-	lastMessagePack.PackHeader.Property.BodyByteLength = uint16(len(concatMesgBodyBytes))
-
-	return lastMessagePack.unmarshalBody(concatMesgBodyBytes)
+	return target.unmarshalBody(mesgBodyBuf.Bytes())
 }
 
 func unmarshalBody(reader io.Reader, packBody interface{}) error {

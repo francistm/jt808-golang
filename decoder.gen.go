@@ -8,29 +8,28 @@ import (
 	message "github.com/francistm/jt808-golang/message"
 )
 
-func (messagePack *MessagePack) unmarshalBody(buf []byte) error {
-	reader := bytes.NewReader(buf)
-	packBody := new(PackBody)
+func (m *MessagePack[T]) unmarshalBody(buf []byte) error {
+	var (
+		body   any
+		reader = bytes.NewReader(buf)
+	)
 
-	if messagePack.PackHeader.Package != nil {
-		packBody.body = new(message.PartialPackBody)
+	if m.PackHeader.Package != nil {
+		body = new(message.PartialPackBody)
 	} else {
-		switch messagePack.PackHeader.MessageID {
+		switch m.PackHeader.MessageID {
 		case uint16(0x1):
-			packBody.body = new(message.Body0001)
-
+			body = new(message.Body0001)
 		case uint16(0x200):
-			packBody.body = new(message.Body0200)
-
+			body = new(message.Body0200)
 		case uint16(0x801):
-			packBody.body = new(message.Body0801)
-
+			body = new(message.Body0801)
 		default:
-			return fmt.Errorf("unsupported messageId: 0x%.4X", messagePack.PackHeader.MessageID)
+			return fmt.Errorf("unsupported messageId: 0x%.4X", m.PackHeader.MessageID)
 		}
 	}
 
-	messagePack.PackBody = packBody
+	m.PackBody = body.(T)
 
-	return unmarshalBody(reader, packBody.body)
+	return unmarshalBody(reader, body)
 }
