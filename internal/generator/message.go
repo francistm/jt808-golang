@@ -11,34 +11,34 @@ import (
 
 var structNameRegex = regexp.MustCompile(`^Body(\d+)$`)
 
-type MessageStruct struct {
+type MessageDecl struct {
 	Name     string
 	HeaderID uint16
 }
 
-func buildMessageStructFromName(structName string) (*MessageStruct, error) {
+func buildMessageStructFromName(structName string) (*MessageDecl, error) {
 	matched := structNameRegex.FindStringSubmatch(structName)
 
 	if len(matched) != 2 {
 		return nil, fmt.Errorf("messageName %s is invalid", structName)
 	}
 
-	HeaderID, err := strconv.ParseInt(matched[1], 16, 32)
+	headerID, err := strconv.ParseInt(matched[1], 16, 32)
 
 	if err != nil {
 		return nil, err
 	}
 
-	messageStruct := MessageStruct{
+	messageStruct := MessageDecl{
 		Name:     structName,
-		HeaderID: uint16(HeaderID),
+		HeaderID: uint16(headerID),
 	}
 
 	return &messageStruct, nil
 }
 
-func GetAllMessageStructs() ([]*MessageStruct, error) {
-	var messageStructs []*MessageStruct
+func GetAllMessageDecls() ([]*MessageDecl, error) {
+	var messageStructs []*MessageDecl
 	fileSet := token.NewFileSet()
 	pkgMap, err := parser.ParseDir(fileSet, "message", nil, 0)
 
@@ -58,11 +58,12 @@ func GetAllMessageStructs() ([]*MessageStruct, error) {
 				}
 
 				decl := obj.Decl.(*ast.TypeSpec)
+
 				if _, ok := decl.Type.(*ast.StructType); !ok {
 					continue
 				}
 
-				if !structNameRegex.Match([]byte(obj.Name)) {
+				if !structNameRegex.MatchString(obj.Name) {
 					continue
 				}
 
