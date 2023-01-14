@@ -24,12 +24,12 @@ func TestUnmarshal(t *testing.T) {
 		assert.Equal(t, uint16(0x1213), messagePack.PackBody.AcknowledgeSerialID)
 		assert.Equal(t, uint8(0x14), messagePack.PackBody.AcknowledgeType)
 		assert.Equal(t, uint8(0x2f), messagePack.Checksum)
-		assert.Equal(t, true, messagePack.ChecksumValid)
+		assert.Equal(t, true, messagePack.IsChecksumValid)
 	}
 }
 
 func BenchmarkUnmarshal0001(b *testing.B) {
-	var messagePack MessagePack[*message.Body0001]
+	messagePack := MessagePack[*message.Body0001]{}
 	buf := []byte{0x7e, 0x00, 0x01, 0x00, 0x05, 0x01, 0x86, 0x57, 0x40, 0x59, 0x79, 0x00, 0x8f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x99, 0x7e}
 
 	for i := 0; i < b.N; i++ {

@@ -31,13 +31,13 @@ func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 		return nil, err
 	}
 
-	if checksum, err := computeChecksum(buf.Bytes()); err != nil {
+	if checksum, err := calculateChecksum(buf.Bytes()); err != nil {
 		return nil, err
 	} else if err := buf.WriteByte(checksum); err != nil {
 		return nil, err
 	}
 
-	escapedBytes, err := escapeChars(buf.Bytes())
+	escapedBytes, err := encodeBytes(buf.Bytes())
 
 	if err != nil {
 		return nil, err
@@ -45,20 +45,25 @@ func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 
 	var finalBuf bytes.Buffer
 
-	finalBuf.WriteByte(0x7e)
+	finalBuf.WriteByte(identifyByte)
 
 	if _, err := finalBuf.Write(escapedBytes); err != nil {
 		return nil, err
 	}
 
-	finalBuf.WriteByte(0x7e)
+	finalBuf.WriteByte(identifyByte)
 
 	return finalBuf.Bytes(), nil
 }
 
 func marshalBody[T any](writer io.Writer, packBody T) error {
-	refMesgBodyType := reflect.TypeOf(packBody).Elem()
-	refMesgBodyValue := reflect.ValueOf(packBody).Elem()
+	refMesgBodyType := reflect.TypeOf(packBody)
+	refMesgBodyValue := reflect.ValueOf(packBody)
+
+	if refMesgBodyType.Kind() == reflect.Ptr {
+		refMesgBodyType = refMesgBodyType.Elem()
+		refMesgBodyValue = refMesgBodyValue.Elem()
+	}
 
 	for i := 0; i < refMesgBodyValue.NumField(); i++ {
 		fieldType := refMesgBodyType.Field(i)
@@ -71,47 +76,42 @@ func marshalBody[T any](writer io.Writer, packBody T) error {
 			continue
 		}
 
-		tag, err := parseTag(rawTag)
-
-		var writerErr error
+		tag, err := parseMesgTag(rawTag)
 
 		if err != nil {
 			return fmt.Errorf("cannot parse tag of field %s.%s", refMesgBodyType.Name(), fieldType.Name)
 		}
 
-		switch fieldValue.Kind() {
-		case reflect.Uint8:
-			writerErr = writeUint8(fieldValue.Interface().(uint8), writer)
+		switch {
+		case fieldType.Type.Kind() == reflect.Uint8:
+			err = writeUint8(uint8(fieldValue.Uint()), writer)
 
-		case reflect.Uint16:
-			writerErr = writeUint16(fieldValue.Interface().(uint16), writer)
+		case fieldType.Type.Kind() == reflect.Uint16:
+			err = writeUint16(uint16(fieldValue.Uint()), writer)
 
-		case reflect.Uint32:
-			writerErr = writeUint32(fieldValue.Interface().(uint32), writer)
+		case fieldType.Type.Kind() == reflect.Uint32:
+			err = writeUint32(uint32(fieldValue.Uint()), writer)
 
-		case reflect.Slice:
-			if tag.fieldDataEncoding == tagEncodingNone {
-				_, writerErr = writer.Write(fieldValue.Interface().([]byte))
+		case fieldType.Type.Kind() == reflect.Slice && fieldType.Type.Elem().Kind() == reflect.Uint8:
+			if tag.dataEncoding == tagEncodingNone {
+				_, err = writer.Write(fieldValue.Bytes())
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.fieldDataEncoding)
+				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
 			}
 
-		case reflect.String:
-			if tag.fieldDataEncoding == tagEncodingBCD {
-				writerErr = writeBCD(fieldValue.Interface().(string), writer)
+		case fieldType.Type.Kind() == reflect.String:
+			if tag.dataEncoding == tagEncodingBCD {
+				err = writeBCD(fieldValue.String(), writer)
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.fieldDataEncoding)
+				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
 			}
 
-		case reflect.Struct:
-			writerErr = marshalBody(writer, fieldValue.Addr().Interface())
-
-		case reflect.Ptr:
-			writerErr = marshalBody(writer, fieldValue.Interface())
+		case fieldType.Type.Kind() == reflect.Struct:
+			err = marshalBody(writer, fieldValue.Interface())
 		}
 
-		if writerErr != nil {
-			return writerErr
+		if err != nil {
+			return err
 		}
 	}
 

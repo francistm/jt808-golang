@@ -9,6 +9,10 @@ import (
 	"io"
 )
 
+const (
+	identifyByte uint8 = 0x7e
+)
+
 func readBCD(reader io.Reader, byteLen int) (string, error) {
 	buf := make([]byte, byteLen)
 
@@ -105,7 +109,7 @@ func writeUint32(i uint32, writer io.Writer) error {
 
 // 消息发送前对消息中 0x7e, 0x7d 进行转义
 // 需先将消息体进行转义，然后在首位增加 0x7e 的标识位字节
-func escapeChars(buf []byte) ([]byte, error) {
+func encodeBytes(buf []byte) ([]byte, error) {
 	var writer bytes.Buffer
 	var reader = bytes.NewReader(buf)
 
@@ -139,7 +143,7 @@ func escapeChars(buf []byte) ([]byte, error) {
 
 // 消息收到后，对其中 0x7d01, 0x7d02 进行还原
 // 需先去除首位的 0x7e 标识位字节后，再进行消息体转移
-func unescapeChars(buf []byte) ([]byte, error) {
+func decodeBytes(buf []byte) ([]byte, error) {
 	var writer bytes.Buffer
 	var reader = bytes.NewReader(buf)
 
@@ -183,7 +187,7 @@ func unescapeChars(buf []byte) ([]byte, error) {
 	return writer.Bytes(), nil
 }
 
-func computeChecksum(buf []byte) (byte, error) {
+func calculateChecksum(buf []byte) (byte, error) {
 	if len(buf) < 2 {
 		return 0, errors.New("buf is less than 2 bytes")
 	}

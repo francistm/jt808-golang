@@ -14,12 +14,12 @@ const (
 	tagEncodingNone = "none"
 )
 
-type parsedTag struct {
-	fieldDataLength   int
-	fieldDataEncoding string
+type mesgTag struct {
+	dataLength   int
+	dataEncoding string
 }
 
-func (ptr *parsedTag) parseFieldDataLength(s string) error {
+func (t *mesgTag) parseDataLength(s string) error {
 	if len(s) == 0 {
 		return nil
 	}
@@ -27,36 +27,30 @@ func (ptr *parsedTag) parseFieldDataLength(s string) error {
 	i, err := strconv.ParseUint(s, 10, 8)
 
 	if err == nil {
-		ptr.fieldDataLength = int(i)
+		t.dataLength = int(i)
 	}
 
 	return err
 }
 
-func parseTag(tag string) (*parsedTag, error) {
-	t := &parsedTag{
-		fieldDataLength:   -1,
-		fieldDataEncoding: tagEncodingAuto,
+func parseMesgTag(tag string) (*mesgTag, error) {
+	t := &mesgTag{
+		dataLength:   -1,
+		dataEncoding: tagEncodingAuto,
 	}
 
 	if tag == "" {
 		return t, nil
 	}
 
-	tags := strings.Split(tag, ",")
+	commaIndex := strings.IndexByte(tag, ',')
 
-	switch len(tags) {
-	case 1:
-		if err := t.parseFieldDataLength(tags[0]); err != nil {
-			return nil, err
-		}
+	if err := t.parseDataLength(tag[:commaIndex]); err != nil {
+		return nil, err
+	}
 
-	case 2:
-		if err := t.parseFieldDataLength(tags[0]); err != nil {
-			return nil, err
-		}
-
-		t.fieldDataEncoding = tags[1]
+	if commaIndex > -1 {
+		t.dataEncoding = tag[commaIndex+1:]
 	}
 
 	return t, nil

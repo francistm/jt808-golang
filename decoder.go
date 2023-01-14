@@ -17,29 +17,27 @@ import (
 func Unmarshal[T any](buf []byte, target *MessagePack[T]) error {
 	var checksum byte
 
-	if buf[0] != 0x7e {
+	if buf[0] != identifyByte {
 		return fmt.Errorf("invalid prefix byte 0x%.2X", buf[0])
 	}
 
-	if buf[len(buf)-1] != 0x7e {
-		return fmt.Errorf("invalid suffix byte 0x%.2X", buf[0])
+	if buf[len(buf)-1] != identifyByte {
+		return fmt.Errorf("invalid suffix byte 0x%.2X", buf[len(buf)-1])
 	}
 
 	buf = buf[1 : len(buf)-1]
 
-	buf, err := unescapeChars(buf)
+	buf, err := decodeBytes(buf)
 
 	if err != nil {
 		return err
 	}
 
-	c, err := computeChecksum(buf[0 : len(buf)-1])
+	checksum, err = calculateChecksum(buf[0 : len(buf)-1])
 
 	if err != nil {
 		return err
 	}
-
-	checksum = c
 
 	reader := bytes.NewReader(buf)
 
@@ -81,7 +79,7 @@ func Unmarshal[T any](buf []byte, target *MessagePack[T]) error {
 	}
 
 	target.Checksum = bs
-	target.ChecksumValid = bs == checksum
+	target.IsChecksumValid = bs == checksum
 
 	return nil
 }
@@ -148,60 +146,59 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 			continue
 		}
 
-		tag, err := parseTag(rawTag)
+		tag, err := parseMesgTag(rawTag)
 
 		if err != nil {
 			return fmt.Errorf("cannot parse tag of field %s.%s", refMesgBodyType.Name(), fieldType.Name)
 		}
 
-		var readerErr error
-		var readerValue interface{}
+		var readerValue any
 
 		switch fieldValue.Kind() {
 		case reflect.Uint8:
-			readerValue, readerErr = readUint8(reader)
+			readerValue, err = readUint8(reader)
 
 		case reflect.Uint16:
-			readerValue, readerErr = readUint16(reader)
+			readerValue, err = readUint16(reader)
 
 		case reflect.Uint32:
-			readerValue, readerErr = readUint32(reader)
+			readerValue, err = readUint32(reader)
 
 		case reflect.Ptr:
 			structType := fieldValue.Type().Elem()
 			structPtr := reflect.New(structType).Interface()
 			readerValue = structPtr
-			readerErr = unmarshalBody(reader, structPtr)
+			err = unmarshalBody(reader, structPtr)
 
 		case reflect.Slice:
-			if tag.fieldDataEncoding == tagEncodingNone {
-				readerValue, readerErr = ioutil.ReadAll(reader)
+			if tag.dataEncoding == tagEncodingNone {
+				readerValue, err = ioutil.ReadAll(reader)
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.fieldDataEncoding)
+				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
 			}
 
 		case reflect.String:
-			if tag.fieldDataLength < 1 {
+			if tag.dataLength < 1 {
 				return fmt.Errorf("field %s.%s with string must set byte length", refMesgBodyType.Name(), fieldType.Name)
 			}
 
-			if tag.fieldDataEncoding == tagEncodingBCD {
-				readerValue, readerErr = readBCD(reader, tag.fieldDataLength)
-			} else if tag.fieldDataEncoding == tagEncodingNone {
-				readerValue, readerErr = readBytes(reader, tag.fieldDataLength)
+			if tag.dataEncoding == tagEncodingBCD {
+				readerValue, err = readBCD(reader, tag.dataLength)
+			} else if tag.dataEncoding == tagEncodingNone {
+				readerValue, err = readBytes(reader, tag.dataLength)
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.fieldDataEncoding)
+				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
 			}
 
 		case reflect.Struct:
 			structType := fieldValue.Type()
 			structPtr := reflect.New(structType).Interface()
 			readerValue = structPtr
-			readerErr = unmarshalBody(reader, structPtr)
+			err = unmarshalBody(reader, structPtr)
 		}
 
-		if readerErr != nil {
-			return readerErr
+		if err != nil {
+			return err
 		}
 
 		if !fieldValue.CanSet() {
