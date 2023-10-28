@@ -17,13 +17,13 @@ type Body0200 struct {
 }
 
 type Body0200Base struct {
-	WarnFlag     uint32 `jt808:""`
-	StatusFlag   uint32 `jt808:""`
-	RawLatitude  uint32 `jt808:""`
-	RawLongitude uint32 `jt808:""`
-	Altitude     uint16 `jt808:""`
-	RawSpeed     uint16 `jt808:""`
-	Direction    uint16 `jt808:""`
+	WarnFlag     uint32
+	StatusFlag   uint32
+	RawLatitude  uint32
+	RawLongitude uint32
+	Altitude     uint16
+	RawSpeed     uint16
+	Direction    uint16
 	RawTime      string `jt808:"6,bcd"`
 }
 

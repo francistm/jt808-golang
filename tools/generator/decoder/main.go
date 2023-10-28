@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 
 	. "github.com/dave/jennifer/jen"
 	"github.com/francistm/jt808-golang/internal/generator"
@@ -63,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := ioutil.WriteFile("decoder.gen.go", buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile("decoder.gen.go", buf.Bytes(), 0644); err != nil {
 		panic(err)
 	}
 }

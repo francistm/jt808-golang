@@ -69,14 +69,12 @@ func marshalBody[T any](writer io.Writer, packBody T) error {
 		fieldType := refMesgBodyType.Field(i)
 		fieldValue := refMesgBodyValue.Field(i)
 
-		rawTag, hasTag := fieldType.Tag.Lookup(tagName)
-
-		// embed struct field is kind of struct
-		if fieldValue.Kind() != reflect.Struct && !hasTag {
+		if fieldType.PkgPath != "" {
 			continue
 		}
 
-		tag, err := parseMesgTag(rawTag)
+		rawTag := fieldType.Tag.Get(tagName)
+		parsedTag, err := parseMesgTag(rawTag)
 
 		if err != nil {
 			return fmt.Errorf("cannot parse tag of field %s.%s", refMesgBodyType.Name(), fieldType.Name)
@@ -93,17 +91,17 @@ func marshalBody[T any](writer io.Writer, packBody T) error {
 			err = writeUint32(uint32(fieldValue.Uint()), writer)
 
 		case fieldType.Type.Kind() == reflect.Slice && fieldType.Type.Elem().Kind() == reflect.Uint8:
-			if tag.dataEncoding == tagEncodingNone {
+			if parsedTag.dataEncoding == tagEncodingNone {
 				_, err = writer.Write(fieldValue.Bytes())
 			} else {
-				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
+				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
 
 		case fieldType.Type.Kind() == reflect.String:
-			if tag.dataEncoding == tagEncodingBCD {
+			if parsedTag.dataEncoding == tagEncodingBCD {
 				err = writeBCD(fieldValue.String(), writer)
 			} else {
-				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
+				err = fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
 
 		case fieldType.Type.Kind() == reflect.Struct:

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 	"sort"
 
@@ -139,14 +138,12 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 		fieldType := refMesgBodyType.Field(i)
 		fieldValue := refMesgBodyValue.Field(i)
 
-		rawTag, hasTag := fieldType.Tag.Lookup(tagName)
-
-		// embed struct field is kind of struct
-		if fieldValue.Kind() != reflect.Struct && !hasTag {
+		if fieldType.PkgPath != "" {
 			continue
 		}
 
-		tag, err := parseMesgTag(rawTag)
+		rawTag := fieldType.Tag.Get(tagName)
+		parsedTag, err := parseMesgTag(rawTag)
 
 		if err != nil {
 			return fmt.Errorf("cannot parse tag of field %s.%s", refMesgBodyType.Name(), fieldType.Name)
@@ -171,23 +168,23 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 			err = unmarshalBody(reader, structPtr)
 
 		case reflect.Slice:
-			if tag.dataEncoding == tagEncodingNone {
-				readerValue, err = ioutil.ReadAll(reader)
+			if parsedTag.dataEncoding == tagEncodingNone {
+				readerValue, err = io.ReadAll(reader)
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
+				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
 
 		case reflect.String:
-			if tag.dataLength < 1 {
+			if parsedTag.dataLength < 1 {
 				return fmt.Errorf("field %s.%s with string must set byte length", refMesgBodyType.Name(), fieldType.Name)
 			}
 
-			if tag.dataEncoding == tagEncodingBCD {
-				readerValue, err = readBCD(reader, tag.dataLength)
-			} else if tag.dataEncoding == tagEncodingNone {
-				readerValue, err = readBytes(reader, tag.dataLength)
+			if parsedTag.dataEncoding == tagEncodingBCD {
+				readerValue, err = readBCD(reader, parsedTag.dataLength)
+			} else if parsedTag.dataEncoding == tagEncodingNone {
+				readerValue, err = readBytes(reader, parsedTag.dataLength)
 			} else {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, tag.dataEncoding)
+				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
 
 		case reflect.Struct:
