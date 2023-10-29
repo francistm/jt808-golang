@@ -24,7 +24,7 @@ func (p *MessagePack[T]) MarshalBinary() ([]byte, error) {
 		finalBuf = bytes.NewBuffer()
 	)
 
-	err := encode.MarshalPackBody[T](bodyBuf, p.PackBody)
+	err := encode.MarshalPackBody(bodyBuf, p.PackBody)
 
 	if err != nil {
 		return nil, err
@@ -129,12 +129,6 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
-	typedPackBody, ok := packBody.(T)
-
-	if !ok {
-		return fmt.Errorf("can't convert mesgBody %T as %T", packBody, p.PackBody)
-	}
-
 	// read bytes according header body data length
 	packBodyData, err := reader.ReadBytes(int(p.PackHeader.Property.BodyByteLength))
 
@@ -142,10 +136,9 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
-	p.PackBody = typedPackBody
 	packBodyReader = bytes.NewReader(packBodyData)
 
-	if err := decode.UnmarshalPackBody(packBodyReader, p.PackBody); err != nil {
+	if err := decode.UnmarshalPackBody(packBodyReader, packBody); err != nil {
 		return err
 	}
 
@@ -156,7 +149,14 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
+	typedPackBody, ok := packBody.(T)
+
+	if !ok {
+		return fmt.Errorf("can't convert mesgBody %T as %T", packBody, p.PackBody)
+	}
+
 	p.Checksum = checksumWant
+	p.PackBody = typedPackBody
 	p.ChecksumValid = checksumWant == checksumGot
 
 	return nil

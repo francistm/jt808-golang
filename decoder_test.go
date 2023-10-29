@@ -2,7 +2,6 @@ package jt808
 
 import (
 	"bytes"
-	"encoding/binary"
 	"image/jpeg"
 	"testing"
 
@@ -12,21 +11,73 @@ import (
 )
 
 func TestUnmarshal(t *testing.T) {
-	var (
-		messagePack message.MessagePack[*message.Body0001]
-		b           = []byte{0x7e, 0x00, 0x01, 0x00, 0x05, 0x01, 0x86, 0x57, 0x40, 0x59, 0x79, 0x00, 0x8f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x2f, 0x7e}
-	)
+	tests := []struct {
+		name       string
+		mesgPack   *message.MessagePack[any]
+		data       []byte
+		assertFunc func(*testing.T, *message.MessagePack[any])
+		wantErr    bool
+	}{
+		{
+			name:     "mesg 0001",
+			mesgPack: new(message.MessagePack[any]),
+			data:     []byte{0x7e, 0x00, 0x01, 0x00, 0x05, 0x01, 0x86, 0x57, 0x40, 0x59, 0x79, 0x00, 0x8f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x2f, 0x7e},
+			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[any]) {
+				assert.Equal(t, uint16(0x0001), mesgPack.PackHeader.MessageID)
+				assert.Equal(t, uint16(0x0005), mesgPack.PackHeader.Property.BodyByteLength)
+				assert.Equal(t, uint8(0x2f), mesgPack.Checksum)
+				assert.Equal(t, true, mesgPack.ChecksumValid)
 
-	err := Unmarshal(b, &messagePack)
+				if assert.IsType(t, new(message.Body0001), mesgPack.PackBody) {
+					packBody := mesgPack.PackBody.(*message.Body0001)
 
-	if assert.NoError(t, err) {
-		assert.Equal(t, uint16(0x0001), messagePack.PackHeader.MessageID)
-		assert.Equal(t, uint16(0x0005), messagePack.PackHeader.Property.BodyByteLength)
-		assert.Equal(t, uint16(0x1011), messagePack.PackBody.AckMesgId)
-		assert.Equal(t, uint16(0x1213), messagePack.PackBody.AckSerialId)
-		assert.Equal(t, uint8(0x14), messagePack.PackBody.AckType)
-		assert.Equal(t, uint8(0x2f), messagePack.Checksum)
-		assert.Equal(t, true, messagePack.ChecksumValid)
+					assert.Equal(t, uint16(0x1011), packBody.AckMesgId)
+					assert.Equal(t, uint16(0x1213), packBody.AckSerialId)
+					assert.Equal(t, uint8(0x14), packBody.AckType)
+				}
+			},
+		},
+		{
+			name:     "mesg 0200",
+			mesgPack: new(message.MessagePack[any]),
+			data:     []byte{0x7e, 0x02, 0x00, 0x00, 0x26, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x22, 0xb8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0xba, 0x7f, 0x0e, 0x07, 0xe4, 0xf1, 0x1c, 0x00, 0x28, 0x00, 0x3c, 0x00, 0x00, 0x18, 0x07, 0x15, 0x10, 0x10, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00, 0x64, 0x02, 0x02, 0x00, 0x37, 0x57, 0x7e},
+			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[any]) {
+				assert.Equal(t, uint16(0x0200), mesgPack.PackHeader.MessageID)
+
+				if assert.IsType(t, new(message.Body0200), mesgPack.PackBody) {
+					packBody := mesgPack.PackBody.(*message.Body0200)
+
+					assert.Equal(t, uint32(0x01), packBody.WarnFlag)
+					assert.Equal(t, uint32(0x02), packBody.StatusFlag)
+					assert.Equal(t, 12.222222, packBody.Latitude())
+					assert.Equal(t, 132.444444, packBody.Longitude())
+					assert.Equal(t, float32(6), packBody.Speed())
+
+					extraMessage, err := packBody.ExtraMessage()
+
+					if assert.NoError(t, err) {
+						if assert.Contains(t, extraMessage, uint8(0x01)) {
+							assert.Equal(t, []byte{0x00, 0x00, 0x00, 0x64}, extraMessage[0x01])
+						}
+						if assert.Contains(t, extraMessage, uint8(0x02)) {
+							assert.Equal(t, []byte{0x00, 0x37}, extraMessage[0x02])
+						}
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Unmarshal(tt.data, tt.mesgPack)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else if assert.NoError(t, err) {
+				tt.assertFunc(t, tt.mesgPack)
+			}
+		})
 	}
 }
 
@@ -88,38 +139,6 @@ func TestUnmarshal_PackagedMessage(t *testing.T) {
 				assert.Equal(t, 320, mediaContent.Bounds().Size().X)
 				assert.Equal(t, 240, mediaContent.Bounds().Size().Y)
 			}
-		}
-	}
-}
-
-func TestUnmarshal_Message0200(t *testing.T) {
-	var (
-		messagePack message.MessagePack[*message.Body0200]
-		b           = []byte{0x7e, 0x02, 0x00, 0x00, 0x26, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x22, 0xb8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0xba, 0x7f, 0x0e, 0x07, 0xe4, 0xf1, 0x1c, 0x00, 0x28, 0x00, 0x3c, 0x00, 0x00, 0x18, 0x07, 0x15, 0x10, 0x10, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00, 0x64, 0x02, 0x02, 0x00, 0x37, 0x57, 0x7e}
-	)
-
-	err := Unmarshal(b, &messagePack)
-
-	if assert.NoError(t, err) {
-		assert.Equal(t, uint16(0x0200), messagePack.PackHeader.MessageID)
-		assert.Equal(t, uint32(0x01), messagePack.PackBody.WarnFlag)
-		assert.Equal(t, uint32(0x02), messagePack.PackBody.StatusFlag)
-		assert.Equal(t, 12.222222, messagePack.PackBody.Latitude())
-		assert.Equal(t, 132.444444, messagePack.PackBody.Longitude())
-		assert.Equal(t, float32(6), messagePack.PackBody.Speed())
-	}
-
-	extraMessage, err := messagePack.PackBody.ExtraMessage()
-
-	if assert.NoError(t, err) {
-		assert.Equal(t, 2, len(extraMessage))
-
-		if v, ok := extraMessage[0x01]; ok {
-			assert.Equal(t, uint32(100), binary.BigEndian.Uint32(v))
-		}
-
-		if v, ok := extraMessage[0x02]; ok {
-			assert.Equal(t, uint16(55), binary.BigEndian.Uint16(v))
 		}
 	}
 }

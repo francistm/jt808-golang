@@ -1,6 +1,7 @@
 package decode
 
 import (
+	"encoding"
 	"fmt"
 	"io"
 	"reflect"
@@ -10,6 +11,16 @@ import (
 )
 
 func UnmarshalPackBody(reader *bytes.Reader, target any) error {
+	if unmarshaller, ok := target.(encoding.BinaryUnmarshaler); ok {
+		data, err := io.ReadAll(reader)
+
+		if err != nil {
+			return err
+		}
+
+		return unmarshaller.UnmarshalBinary(data)
+	}
+
 	mesgBodyTypeRef := reflect.TypeOf(target).Elem()
 	mesgBodyValueRef := reflect.ValueOf(target).Elem()
 

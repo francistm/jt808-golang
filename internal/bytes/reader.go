@@ -46,8 +46,8 @@ func (r *Reader) ReadUint32() (uint32, error) {
 	return binary.BigEndian.Uint32(buf), nil
 }
 
-func (r *Reader) ReadBytes(len int) ([]byte, error) {
-	buf := make([]byte, len)
+func (r *Reader) ReadBytes(size int) ([]byte, error) {
+	buf := make([]byte, size)
 
 	if _, err := r.Read(buf); err != nil {
 		return nil, err
@@ -56,12 +56,23 @@ func (r *Reader) ReadBytes(len int) ([]byte, error) {
 	return buf, nil
 }
 
-func (r *Reader) ReadBCD(len int) (string, error) {
-	buf := make([]byte, len)
+func (r *Reader) ReadBCD(size int) (string, error) {
+	buf := make([]byte, size)
 
 	if _, err := r.Read(buf); err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf("%x", buf), nil
+}
+
+func (r *Reader) ReadString(size int) (string, error) {
+	buf := make([]byte, size)
+	readSize, err := r.Read(buf)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf[0:readSize]), nil
 }
