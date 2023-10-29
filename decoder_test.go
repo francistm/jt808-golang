@@ -20,9 +20,9 @@ func TestUnmarshal(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, uint16(0x0001), messagePack.PackHeader.MessageID)
 		assert.Equal(t, uint16(0x0005), messagePack.PackHeader.Property.BodyByteLength)
-		assert.Equal(t, uint16(0x1011), messagePack.PackBody.AcknowledgeMessageID)
-		assert.Equal(t, uint16(0x1213), messagePack.PackBody.AcknowledgeSerialID)
-		assert.Equal(t, uint8(0x14), messagePack.PackBody.AcknowledgeType)
+		assert.Equal(t, uint16(0x1011), messagePack.PackBody.AckMesgId)
+		assert.Equal(t, uint16(0x1213), messagePack.PackBody.AckSerialId)
+		assert.Equal(t, uint8(0x14), messagePack.PackBody.AckType)
 		assert.Equal(t, uint8(0x2f), messagePack.Checksum)
 		assert.Equal(t, true, messagePack.IsChecksumValid)
 	}

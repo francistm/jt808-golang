@@ -5,11 +5,10 @@ import (
 )
 
 var (
-	timeLayout  = "060102150405"
-	locationCST = time.FixedZone("Asia/Shanghai", 8*3600)
+	timeLayoutBCD = "060102150405"
+	timezoneCST   = time.FixedZone("Asia/Shanghai", 8*3600)
 )
 
-// PartialPackBody
 type PartialPackBody struct {
-	RawBody []byte `jt808:",none"`
+	RawBody []byte `jt808:",raw"`
 }

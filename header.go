@@ -70,9 +70,13 @@ func marshalHeader(v *PackHeader) ([]byte, error) {
 		return nil, err
 	}
 
-	if b, err := v.Property.marshal(); err != nil {
+	b, err := v.Property.marshal()
+
+	if err != nil {
 		return nil, err
-	} else if _, err = buf.Write(b); err != nil {
+	}
+
+	if _, err = buf.Write(b); err != nil {
 		return nil, err
 	}
 

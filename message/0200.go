@@ -2,16 +2,17 @@ package message
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math"
 	"sort"
 	"time"
 )
 
-// Body0200 0x0200 消息体正文结构体
+// 位置信息汇报
 type Body0200 struct {
 	Body0200Base
-	RawExtraMessage []byte `jt808:",none"`
+	RawExtraMessage []byte `jt808:",raw"`
 
 	parsedExtraMessage map[uint8][]byte // cache parsed rawExtraMessage
 }
@@ -51,40 +52,41 @@ func (b *Body0200) SetSpeed(f float32) {
 	b.RawSpeed = uint16(f * 10)
 }
 
-func (b *Body0200) Time() *time.Time {
-	cstTime, err := time.ParseInLocation(timeLayout, b.RawTime, locationCST)
+func (b *Body0200) Time() time.Time {
+	t, _ := time.ParseInLocation(timeLayoutBCD, b.RawTime, timezoneCST)
 
-	if err != nil {
-		// TODO: add logger here
-		return nil
-	}
-
-	return &cstTime
+	return t
 }
 
 func (b *Body0200) SetTime(t *time.Time) {
-	b.RawTime = t.In(locationCST).Format(timeLayout)
+	b.RawTime = t.In(timezoneCST).Format(timeLayoutBCD)
 }
 
 func (b *Body0200) ExtraMessage() (map[uint8][]byte, error) {
+	var (
+		reader    *bytes.Reader
+		extraData map[uint8][]byte
+	)
+
 	if b.parsedExtraMessage != nil {
 		return b.parsedExtraMessage, nil
 	}
-
-	extraData := make(map[uint8][]byte)
 
 	if len(b.RawExtraMessage) == 0 {
 		return extraData, nil
 	}
 
-	reader := bytes.NewReader(b.RawExtraMessage)
+	reader = bytes.NewReader(b.RawExtraMessage)
+	extraData = make(map[uint8][]byte)
 
 	for {
 		id, err := reader.ReadByte()
 
-		if err != nil && err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
-		} else if err != nil {
+		}
+
+		if err != nil {
 			return nil, err
 		}
 

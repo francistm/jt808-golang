@@ -3,7 +3,7 @@ module github.com/francistm/jt808-golang
 go 1.18
 
 require (
-	github.com/dave/jennifer v1.6.0
+	github.com/dave/jennifer v1.7.0
 	github.com/stretchr/testify v1.8.1
 )
 

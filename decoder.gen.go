@@ -20,10 +20,30 @@ func (m *MessagePack[T]) unmarshalBody(buf []byte) error {
 		switch m.PackHeader.MessageID {
 		case uint16(0x1):
 			body = new(message.Body0001)
-		case uint16(0x200):
-			body = new(message.Body0200)
+		case uint16(0x3):
+			body = new(message.Body0003)
+		case uint16(0x4):
+			body = new(message.Body0004)
+		case uint16(0x8004):
+			body = new(message.Body8004)
+		case uint16(0x2):
+			body = new(message.Body0002)
+		case uint16(0x102):
+			body = new(message.Body0102)
 		case uint16(0x801):
 			body = new(message.Body0801)
+		case uint16(0x8001):
+			body = new(message.Body8001)
+		case uint16(0x8003):
+			body = new(message.Body8003)
+		case uint16(0x8100):
+			body = new(message.Body8100)
+		case uint16(0x5):
+			body = new(message.Body0005)
+		case uint16(0x100):
+			body = new(message.Body0100)
+		case uint16(0x200):
+			body = new(message.Body0200)
 		default:
 			return fmt.Errorf("unsupported messageId: 0x%.4X", m.PackHeader.MessageID)
 		}

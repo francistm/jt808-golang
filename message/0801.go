@@ -1,6 +1,6 @@
 package message
 
-// Body0801 0x0801 消息体正文结构体
+// 多媒体数据上传
 type Body0801 struct {
 	MediaID          uint32
 	MediaType        uint8
@@ -8,5 +8,5 @@ type Body0801 struct {
 	EventID          uint8
 	ChannelID        uint8
 	PackBody0200     *Body0200Base
-	MediaContent     []byte `jt808:",none"`
+	MediaContent     []byte `jt808:",raw"`
 }

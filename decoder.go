@@ -168,22 +168,25 @@ func unmarshalBody(reader io.Reader, packBody interface{}) error {
 			err = unmarshalBody(reader, structPtr)
 
 		case reflect.Slice:
-			if parsedTag.dataEncoding == tagEncodingNone {
-				readerValue, err = io.ReadAll(reader)
-			} else {
+			if parsedTag.dataEncoding != tagEncodingNone {
 				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
+
+			readerValue, err = io.ReadAll(reader)
 
 		case reflect.String:
 			if parsedTag.dataLength < 1 {
 				return fmt.Errorf("field %s.%s with string must set byte length", refMesgBodyType.Name(), fieldType.Name)
 			}
 
-			if parsedTag.dataEncoding == tagEncodingBCD {
+			switch parsedTag.dataEncoding {
+			case tagEncodingBCD:
 				readerValue, err = readBCD(reader, parsedTag.dataLength)
-			} else if parsedTag.dataEncoding == tagEncodingNone {
+
+			case tagEncodingNone:
 				readerValue, err = readBytes(reader, parsedTag.dataLength)
-			} else {
+
+			default:
 				return fmt.Errorf("unknown field %s.%s encoding: %s", refMesgBodyType.Name(), fieldType.Name, parsedTag.dataEncoding)
 			}
 

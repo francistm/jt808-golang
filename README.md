@@ -7,9 +7,9 @@ Project is WIP
 # 消息定义
 ``` go
 type Body0001 struct {
-	AcknowledgeMessageID uint16 `jt808:""`
-	AcknowledgeSerialID  uint16 `jt808:""`
-	AcknowledgeType      uint8  `jt808:""`
+	AckMesgId   uint16
+	AckSerialId uint16
+	AckType     uint8
 }
 ```
 结构体字段顺序按照序列化的先后顺序。
@@ -21,7 +21,7 @@ type Body0001 struct {
 |uint8      |byte        |        |
 |uint16     |word        |        |
 |uint32     |dword       |        |
-|[]byte     |byte[n]     |n,none  |
+|[]byte     |byte[n]     |n,raw   |
 |string     |bcd[n]      |n,bcd   |
 |string     |string      |n,gbk   |
 

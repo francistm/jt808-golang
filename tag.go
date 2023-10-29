@@ -11,7 +11,7 @@ const (
 	tagEncodingAuto = "auto"
 	tagEncodingBCD  = "bcd"
 	tagEncodingGBK  = "gbk"
-	tagEncodingNone = "none"
+	tagEncodingNone = "raw"
 )
 
 type mesgTag struct {

@@ -9,9 +9,11 @@ import (
 
 //go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
 
-// Marshal 编译一个消息体到字节数组
 func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
-	var buf bytes.Buffer
+	var (
+		buf      bytes.Buffer
+		finalBuf bytes.Buffer
+	)
 
 	bodyBytes, err := ptr.marshalBody()
 
@@ -21,9 +23,13 @@ func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 
 	ptr.PackHeader.Property.BodyByteLength = uint16(len(bodyBytes))
 
-	if b, err := marshalHeader(&ptr.PackHeader); err != nil {
+	b, err := marshalHeader(&ptr.PackHeader)
+
+	if err != nil {
 		return nil, err
-	} else if _, err := buf.Write(b); err != nil {
+	}
+
+	if _, err := buf.Write(b); err != nil {
 		return nil, err
 	}
 
@@ -31,9 +37,13 @@ func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 		return nil, err
 	}
 
-	if checksum, err := calculateChecksum(buf.Bytes()); err != nil {
+	checksum, err := calculateChecksum(buf.Bytes())
+
+	if err != nil {
 		return nil, err
-	} else if err := buf.WriteByte(checksum); err != nil {
+	}
+
+	if err := buf.WriteByte(checksum); err != nil {
 		return nil, err
 	}
 
@@ -42,8 +52,6 @@ func Marshal[T any](ptr *MessagePack[T]) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var finalBuf bytes.Buffer
 
 	finalBuf.WriteByte(identifyByte)
 
