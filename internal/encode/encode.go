@@ -9,8 +9,8 @@ import (
 	"github.com/francistm/jt808-golang/internal/tag"
 )
 
-func MarshalPackBody(buffer *bytes.Buffer, packBody any) error {
-	if marshaller, ok := packBody.(encoding.BinaryMarshaler); ok {
+func MarshalStruct(buffer *bytes.Buffer, source any) error {
+	if marshaller, ok := source.(encoding.BinaryMarshaler); ok {
 		data, err := marshaller.MarshalBinary()
 
 		if err != nil {
@@ -20,8 +20,8 @@ func MarshalPackBody(buffer *bytes.Buffer, packBody any) error {
 		buffer.Write(data)
 	}
 
-	mesgBodyTypeRef := reflect.TypeOf(packBody)
-	mesgBodyValueRef := reflect.ValueOf(packBody)
+	mesgBodyTypeRef := reflect.TypeOf(source)
+	mesgBodyValueRef := reflect.ValueOf(source)
 
 	if mesgBodyTypeRef.Kind() == reflect.Ptr {
 		mesgBodyTypeRef = mesgBodyTypeRef.Elem()
@@ -67,7 +67,7 @@ func MarshalPackBody(buffer *bytes.Buffer, packBody any) error {
 			err = buffer.WriteBCD(fieldValue.String())
 
 		case fieldType.Type.Kind() == reflect.Struct:
-			err = MarshalPackBody(buffer, fieldValue.Interface())
+			err = MarshalStruct(buffer, fieldValue.Interface())
 		}
 
 		if err != nil {

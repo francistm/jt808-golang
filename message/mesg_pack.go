@@ -24,7 +24,7 @@ func (p *MessagePack[T]) MarshalBinary() ([]byte, error) {
 		finalBuf = bytes.NewBuffer()
 	)
 
-	err := encode.MarshalPackBody(bodyBuf, p.PackBody)
+	err := encode.MarshalStruct(bodyBuf, p.PackBody)
 
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 
 	packBodyReader = bytes.NewReader(packBodyData)
 
-	if err := decode.UnmarshalPackBody(packBodyReader, packBody); err != nil {
+	if err := decode.UnmarshalStruct(packBodyReader, packBody); err != nil {
 		return err
 	}
 

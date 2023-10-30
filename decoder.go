@@ -33,7 +33,7 @@ func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBod
 		sumcheckValid  = true
 	)
 
-	if len(packs) != int(packs[0].PackHeader.Package.TotalCount) {
+	if len(packs) != int(packs[0].PackHeader.Package.Total) {
 		return ErrIncompletedPkgMesg
 	}
 
@@ -88,7 +88,7 @@ func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBod
 	pack.PackBody = typedPackBody
 	mesgBodyReader = bytes.NewReader(mesgBodyBuf.Bytes())
 
-	if err := decode.UnmarshalPackBody(mesgBodyReader, packBody); err != nil {
+	if err := decode.UnmarshalStruct(mesgBodyReader, packBody); err != nil {
 		return err
 	}
 

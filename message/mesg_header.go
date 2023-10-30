@@ -184,34 +184,44 @@ func (p *PackHeaderProperty) UnmarshalBinary(data []byte) error {
 
 type PackHeaderPackage struct {
 	// 消息总包数
-	TotalCount uint16
+	Total uint16
 
 	// 包序号，由 1 开始
 	Index uint16
 }
 
 func (p *PackHeaderPackage) MarshalBinary() ([]byte, error) {
-	panic("not implemeneted")
+	b := bytes.NewBuffer()
+
+	if err := b.WriteUint16(p.Total); err != nil {
+		return nil, err
+	}
+
+	if err := b.WriteUint16(p.Index); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
 func (p *PackHeaderPackage) UnmarshalBinary(b []byte) error {
 	r := bytes.NewReader(b)
 
-	totalCount, err := r.ReadUint16()
+	total, err := r.ReadUint16()
 
 	if err != nil {
 		return err
 	}
 
-	p.TotalCount = totalCount
+	p.Total = total
 
-	currentIndex, err := r.ReadUint16()
+	index, err := r.ReadUint16()
 
 	if err != nil {
 		return err
 	}
 
-	p.Index = currentIndex
+	p.Index = index
 
 	return nil
 }

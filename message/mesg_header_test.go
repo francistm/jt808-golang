@@ -50,7 +50,7 @@ func Test_PackHeader_UnmarshalBinary_MultiPkg(t *testing.T) {
 		assert.Equal(t, uint16(0x0801), packHeader.MessageID)
 		if assert.NotNil(t, packHeader.Package) {
 			assert.Equal(t, uint16(1), packHeader.Package.Index)
-			assert.Equal(t, uint16(10), packHeader.Package.TotalCount)
+			assert.Equal(t, uint16(10), packHeader.Package.Total)
 		}
 	}
 }
