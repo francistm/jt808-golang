@@ -8,5 +8,5 @@ type Body0100 struct {
 	DeviceModel       []byte `jt808:"30,raw"`
 	DeviceId          []byte `jt808:"30,raw"`
 	LicencePlateColor uint8
-	LicencePlate      string `jt808:",gbk"`
+	LicencePlate      string `jt808:"-1,gbk"`
 }

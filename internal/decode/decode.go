@@ -10,6 +10,14 @@ import (
 	"github.com/francistm/jt808-golang/internal/tag"
 )
 
+type RefField struct {
+	StructName string
+	FieldName  string
+	Tag        string
+	TypeRef    reflect.Type
+	ValueRef   reflect.Value
+}
+
 func UnmarshalStruct(reader *bytes.Reader, target any) error {
 	if unmarshaller, ok := target.(encoding.BinaryUnmarshaler); ok {
 		data, err := io.ReadAll(reader)
@@ -21,90 +29,119 @@ func UnmarshalStruct(reader *bytes.Reader, target any) error {
 		return unmarshaller.UnmarshalBinary(data)
 	}
 
-	mesgBodyTypeRef := reflect.TypeOf(target).Elem()
-	mesgBodyValueRef := reflect.ValueOf(target).Elem()
+	refFields := make([]*RefField, 0, 50)
+	refFields = append(refFields, &RefField{
+		TypeRef:  reflect.TypeOf(target),
+		ValueRef: reflect.ValueOf(target),
+	})
 
-	for i := 0; i < mesgBodyValueRef.NumField(); i++ {
-		structField := mesgBodyTypeRef.Field(i)
-		structFieldValueRef := mesgBodyValueRef.Field(i)
+	for len(refFields) > 0 {
+		head := refFields[0]
+		refFields = refFields[1:]
 
-		if structField.PkgPath != "" {
-			continue
-		}
-
-		rawTag := structField.Tag.Get(tag.Name)
-		parsedTag, err := tag.NewMesgTag(rawTag)
-
-		if err != nil {
-			return fmt.Errorf("cannot parse tag of field %s.%s", mesgBodyTypeRef.Name(), structField.Name)
-		}
-
-		var readerValue any
+		var (
+			rawData   any
+			err       error
+			parsedTag *tag.MesgTag
+		)
 
 		switch {
-		case structField.Type.Kind() == reflect.Uint8:
-			readerValue, err = reader.ReadUint8()
+		case head.TypeRef.Kind() == reflect.Uint8:
+			rawData, err = reader.ReadUint8()
 
-		case structField.Type.Kind() == reflect.Uint16:
-			readerValue, err = reader.ReadUint16()
+		case head.TypeRef.Kind() == reflect.Uint16:
+			rawData, err = reader.ReadUint16()
 
-		case structField.Type.Kind() == reflect.Uint32:
-			readerValue, err = reader.ReadUint32()
+		case head.TypeRef.Kind() == reflect.Uint32:
+			rawData, err = reader.ReadUint32()
 
-		case structField.Type.Kind() == reflect.Ptr:
-			structType := structFieldValueRef.Type().Elem()
-			structPtr := reflect.New(structType).Interface()
-			readerValue = structPtr
-			err = UnmarshalStruct(reader, structPtr)
-
-		case structField.Type.Kind() == reflect.Slice && structField.Type.Elem().Kind() == reflect.Uint8:
-			if parsedTag.Encoding != tag.EncodingRaw {
-				return fmt.Errorf("unsupport encoding %s for field %s.%s", parsedTag.Encoding, mesgBodyTypeRef.Name(), structField.Name)
+		case head.TypeRef.Kind() == reflect.Pointer:
+			if head.ValueRef.IsNil() {
+				head.ValueRef.Set(reflect.New(head.TypeRef.Elem()))
 			}
 
-			readerValue, err = io.ReadAll(reader)
+			fields := make([]*RefField, 0, len(refFields)+1)
+			fields = append(fields, &RefField{
+				StructName: head.StructName,
+				FieldName:  head.FieldName,
+				Tag:        head.Tag,
+				TypeRef:    head.TypeRef.Elem(),
+				ValueRef:   head.ValueRef.Elem(),
+			})
+			fields = append(fields, refFields...)
+			refFields = fields
 
-		case structField.Type.Kind() == reflect.String:
+		case head.TypeRef.Kind() == reflect.Slice && head.TypeRef.Elem().Kind() == reflect.Uint8:
+			parsedTag, err = tag.NewMesgTag(head.Tag)
+
+			if err != nil {
+				return fmt.Errorf("cannot parse tag of field %s.%s", head.StructName, head.FieldName)
+			}
+
+			if parsedTag.Length == -1 {
+				rawData, err = io.ReadAll(reader)
+			} else if parsedTag.Length > 0 {
+				rawData, err = reader.ReadFixedBytes(parsedTag.Length)
+			} else {
+				return fmt.Errorf("missing byte length for field %s.%s", head.StructName, head.FieldName)
+			}
+
+		case head.TypeRef.Kind() == reflect.String:
+			parsedTag, err = tag.NewMesgTag(head.Tag)
+
+			if err != nil {
+				return fmt.Errorf("cannot parse tag of field %s.%s", head.StructName, head.FieldName)
+			}
+
 			if parsedTag.Length < 1 {
-				return fmt.Errorf("missing byte length for field %s.%s", mesgBodyTypeRef.Name(), structField.Name)
+				return fmt.Errorf("missing byte length for field %s.%s", head.StructName, head.FieldName)
 			}
 
-			switch parsedTag.Encoding {
-			case tag.EncodingBCD:
-				readerValue, err = reader.ReadBCD(parsedTag.Length)
+			rawData, err = reader.ReadFixedString(parsedTag.Length)
 
-			case tag.EncodingRaw:
-				readerValue, err = reader.ReadFixedBytes(parsedTag.Length)
+		case head.TypeRef.Kind() == reflect.Struct:
+			fields := refFields
+			structFields := make([]*RefField, 0, head.TypeRef.NumField())
 
-			default:
-				return fmt.Errorf("unsupport encoding %s for field %s.%s", parsedTag.Encoding, mesgBodyTypeRef.Name(), structField.Name)
+			for i := 0; i < head.TypeRef.NumField(); i++ {
+				structField := head.TypeRef.Field(i)
+				fieldValueRef := head.ValueRef.Field(i)
+
+				if structField.PkgPath != "" {
+					fmt.Printf("%s.%s pkgPath %s\n", head.TypeRef.Name(), structField.Name, structField.PkgPath)
+					continue
+				}
+
+				structFields = append(structFields, &RefField{
+					StructName: head.TypeRef.Name(),
+					FieldName:  structField.Name,
+					Tag:        structField.Tag.Get(tag.Name),
+					TypeRef:    structField.Type,
+					ValueRef:   fieldValueRef,
+				})
 			}
 
-		case structField.Type.Kind() == reflect.Struct:
-			readerValue = reflect.New(structField.Type).Interface()
-			err = UnmarshalStruct(reader, readerValue)
+			refFields = make([]*RefField, 0, len(fields)+len(structFields))
+			refFields = append(refFields, structFields...)
+			refFields = append(refFields, fields...)
+
+		default:
+			return fmt.Errorf("unsupport field type %s", head.TypeRef)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		if !structFieldValueRef.CanSet() {
-			return fmt.Errorf("cannot set %s.%s field value", mesgBodyTypeRef.Name(), structField.Name)
+		rawDataTypeRef := reflect.TypeOf(rawData)
+		rawDataValueRef := reflect.ValueOf(rawData)
+
+		if rawData != nil && rawDataTypeRef.Kind() != head.TypeRef.Kind() {
+			return fmt.Errorf("can't set %s to field %s.%s, want %s", rawDataTypeRef.Kind(), head.StructName, head.FieldName, head.TypeRef.Kind())
 		}
 
-		refReaderValue := reflect.ValueOf(readerValue)
-
-		switch refReaderValue.Kind() {
-		case reflect.Ptr:
-			if structFieldValueRef.Kind() == reflect.Ptr {
-				structFieldValueRef.Set(reflect.ValueOf(refReaderValue.Interface()))
-			} else {
-				structFieldValueRef.Set(reflect.ValueOf(refReaderValue.Elem().Interface()))
-			}
-
-		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.String, reflect.Slice:
-			structFieldValueRef.Set(reflect.ValueOf(readerValue))
+		if rawData != nil {
+			head.ValueRef.Set(rawDataValueRef)
 		}
 	}
 

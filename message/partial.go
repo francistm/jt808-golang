@@ -10,5 +10,5 @@ var (
 )
 
 type PartialPackBody struct {
-	RawBody []byte `jt808:",raw"`
+	RawBody []byte `jt808:"-1,raw"`
 }

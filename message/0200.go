@@ -12,7 +12,7 @@ import (
 // 位置信息汇报
 type Body0200 struct {
 	Body0200Base
-	RawExtraMessage []byte `jt808:",raw"`
+	RawExtraMessage []byte `jt808:"-1,raw"`
 
 	parsedExtraMessage map[uint8][]byte // cache parsed rawExtraMessage
 }

@@ -4,5 +4,5 @@ package message
 type Body8003 struct {
 	SerialId   uint16
 	TotalCount uint16
-	RawMesgIds []byte `jt808:",raw"`
+	RawMesgIds []byte `jt808:"-1,raw"`
 }
