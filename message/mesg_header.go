@@ -12,7 +12,10 @@ type PackHeader struct {
 	MessageID uint16
 
 	// 消息体属性
-	Property PackProperty
+	Property PackHeaderProperty
+
+	// 协议版本号 (2019)
+	ProtocolVersion uint8
 
 	// 终端手机号
 	TerminalMobileNo string
@@ -21,7 +24,7 @@ type PackHeader struct {
 	SerialNo uint16
 
 	// 消息包封装项
-	Package *PackPackage
+	Package *PackHeaderPackage
 }
 
 func (h *PackHeader) MarshalBinary() ([]byte, error) {
@@ -53,27 +56,24 @@ func (h *PackHeader) MarshalBinary() ([]byte, error) {
 }
 
 func (h *PackHeader) UnmarshalBinary(in []byte) error {
-	reader := bytes.NewReader(in)
+	var (
+		err    error
+		reader = bytes.NewReader(in)
 
-	b, err := reader.ReadByte()
+		mesgId           uint16
+		protocolVersion  uint8
+		terminalMobileNo string
+		serialNumber     uint16
+		packPackage      *PackHeaderPackage
+	)
+
+	mesgId, err = reader.ReadUint16()
 
 	if err != nil {
 		return err
 	}
 
-	if b != 0x7e {
-		_ = reader.UnreadByte()
-	}
-
-	i, err := reader.ReadUint16()
-
-	if err != nil {
-		return err
-	}
-
-	h.MessageID = i
-
-	propertyData, err := reader.ReadBytes(2)
+	propertyData, err := reader.ReadFixedBytes(2)
 
 	if err != nil {
 		return err
@@ -83,41 +83,56 @@ func (h *PackHeader) UnmarshalBinary(in []byte) error {
 		return err
 	}
 
-	s, err := reader.ReadBCD(6)
+	if h.Property.Version == Version2013 {
+		terminalMobileNo, err = reader.ReadBCD(6)
+
+		if err != nil {
+			return err
+		}
+	} else if h.Property.Version == Version2019 {
+		protocolVersion, err = reader.ReadByte()
+
+		if err != nil {
+			return err
+		}
+
+		terminalMobileNo, err = reader.ReadBCD(10)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	serialNumber, err = reader.ReadUint16()
 
 	if err != nil {
 		return err
 	}
-
-	h.TerminalMobileNo = s
-
-	i, err = reader.ReadUint16()
-
-	if err != nil {
-		return err
-	}
-
-	h.SerialNo = i
 
 	if h.Property.IsMultiplePackage {
-		pkgData := make([]byte, 4)
+		pkgData, err := reader.ReadFixedBytes(4)
 
-		if _, err := reader.Read(pkgData); err != nil {
+		if err != nil {
 			return err
 		}
 
-		h.Package = new(PackPackage)
+		packPackage = new(PackHeaderPackage)
 
-		if err := h.Package.UnmarshalBinary(pkgData); err != nil {
+		if err := packPackage.UnmarshalBinary(pkgData); err != nil {
 			return err
 		}
 	}
+
+	h.MessageID = mesgId
+	h.ProtocolVersion = protocolVersion
+	h.TerminalMobileNo = terminalMobileNo
+	h.SerialNo = serialNumber
+	h.Package = packPackage
 
 	return nil
 }
 
-// PackProperty 消息体属性
-type PackProperty struct {
+type PackHeaderProperty struct {
 	// 消息体长度
 	BodyByteLength uint16
 
@@ -126,11 +141,16 @@ type PackProperty struct {
 
 	// 是否为长消息进行分包
 	IsMultiplePackage bool
+
+	// 版本表示
+	Version uint8
 }
 
-func (p *PackProperty) MarshalBinary() ([]byte, error) {
-	var i uint16
-	out := make([]byte, 2)
+func (p *PackHeaderProperty) MarshalBinary() ([]byte, error) {
+	var (
+		i   uint16
+		out = make([]byte, 2)
+	)
 
 	i |= p.BodyByteLength
 
@@ -142,23 +162,27 @@ func (p *PackProperty) MarshalBinary() ([]byte, error) {
 		i |= 0x01 << 13
 	}
 
+	if p.Version == Version2019 {
+		i |= 0x01 << 14
+	}
+
 	binary.BigEndian.PutUint16(out, i)
 
 	return out, nil
 }
 
-func (p *PackProperty) UnmarshalBinary(data []byte) error {
+func (p *PackHeaderProperty) UnmarshalBinary(data []byte) error {
 	i := binary.BigEndian.Uint16(data)
 
 	p.BodyByteLength = i & 0x03ff
 	p.IsEncrypted = ((i >> 10) & 0x01) == 0x01
 	p.IsMultiplePackage = ((i >> 13) & 0x01) == 0x01
+	p.Version = uint8(i >> 14 & 0x01)
 
 	return nil
 }
 
-// PackPackage 消息包分装项
-type PackPackage struct {
+type PackHeaderPackage struct {
 	// 消息总包数
 	TotalCount uint16
 
@@ -166,11 +190,11 @@ type PackPackage struct {
 	Index uint16
 }
 
-func (p *PackPackage) MarshalBinary() ([]byte, error) {
+func (p *PackHeaderPackage) MarshalBinary() ([]byte, error) {
 	panic("not implemeneted")
 }
 
-func (p *PackPackage) UnmarshalBinary(b []byte) error {
+func (p *PackHeaderPackage) UnmarshalBinary(b []byte) error {
 	r := bytes.NewReader(b)
 
 	totalCount, err := r.ReadUint16()

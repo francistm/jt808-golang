@@ -9,7 +9,7 @@ import (
 func Test_PackHeader_MarshalBinary(t *testing.T) {
 	packHeader := PackHeader{
 		MessageID: 0x0102,
-		Property: PackProperty{
+		Property: PackHeaderProperty{
 			BodyByteLength: 5,
 		},
 		TerminalMobileNo: "013812345678",

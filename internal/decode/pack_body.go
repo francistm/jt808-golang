@@ -74,7 +74,7 @@ func UnmarshalPackBody(reader *bytes.Reader, target any) error {
 				readerValue, err = reader.ReadBCD(parsedTag.Length)
 
 			case tag.EncodingRaw:
-				readerValue, err = reader.ReadBytes(parsedTag.Length)
+				readerValue, err = reader.ReadFixedBytes(parsedTag.Length)
 
 			default:
 				return fmt.Errorf("unknown field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)

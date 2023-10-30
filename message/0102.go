@@ -33,19 +33,19 @@ func (body *Body0102) UnmarshalBinary(data []byte) error {
 		return err
 	}
 
-	authCode, err := reader.ReadString(int(authSize))
+	authCode, err := reader.ReadFixedString(int(authSize))
 
 	if err != nil {
 		return err
 	}
 
-	imei, err := reader.ReadString(15)
+	imei, err := reader.ReadFixedString(15)
 
 	if err != nil {
 		return err
 	}
 
-	version, err := reader.ReadString(20)
+	version, err := reader.ReadFixedString(20)
 
 	if err != nil {
 		return err

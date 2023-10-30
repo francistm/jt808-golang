@@ -75,9 +75,9 @@ func (p *MessagePack[T]) MarshalBinary() ([]byte, error) {
 
 func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 	var (
-		reader         *bytes.Reader
-		packBodyReader *bytes.Reader
-		checksumGot    byte
+		reader           *bytes.Reader
+		packBodyReader   *bytes.Reader
+		checksumActually byte
 	)
 
 	if buf[0] != internal.IdentifyByte {
@@ -89,14 +89,13 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 	}
 
 	buf = buf[1 : len(buf)-1]
-
 	buf, err := bytes.Unescape(buf)
 
 	if err != nil {
 		return err
 	}
 
-	checksumGot, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
+	checksumActually, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
 
 	if err != nil {
 		return err
@@ -104,8 +103,10 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 
 	reader = bytes.NewReader(buf)
 
-	// read header, ( 12 or 12 + 4 bytes depends on is multiple package message)
-	packHeaderData, err := reader.ReadBytes(16)
+	// read header, depends on is multiple package message
+	//   2011: 12 or 12 + 4 bytes
+	//   2019: 17 or 17 + 4 bytes
+	packHeaderData, err := reader.ReadFixedBytes(21)
 
 	if err != nil {
 		return err
@@ -115,11 +116,12 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
-	// is not a multiple package, reverse reader 4 bytes back because there's no package bytes
+	if p.PackHeader.Property.Version == Version2013 {
+		_ = reader.UnreadFixedBytes(5 - 21 + len(packHeaderData))
+	}
+
 	if !p.PackHeader.Property.IsMultiplePackage {
-		for i := 0; i < 4; i++ {
-			_ = reader.UnreadByte()
-		}
+		_ = reader.UnreadFixedBytes(4)
 	}
 
 	// update PackBody field from readed bytes to struct
@@ -130,7 +132,7 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 	}
 
 	// read bytes according header body data length
-	packBodyData, err := reader.ReadBytes(int(p.PackHeader.Property.BodyByteLength))
+	packBodyData, err := reader.ReadFixedBytes(int(p.PackHeader.Property.BodyByteLength))
 
 	if err != nil {
 		return err
@@ -143,7 +145,7 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 	}
 
 	// update checksum in message pack
-	checksumWant, err := reader.ReadByte()
+	checksumExpected, err := reader.ReadByte()
 
 	if err != nil {
 		return err
@@ -155,9 +157,9 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return fmt.Errorf("can't convert mesgBody %T as %T", packBody, p.PackBody)
 	}
 
-	p.Checksum = checksumWant
 	p.PackBody = typedPackBody
-	p.ChecksumValid = checksumWant == checksumGot
+	p.Checksum = checksumExpected
+	p.ChecksumValid = checksumExpected == checksumActually
 
 	return nil
 }
