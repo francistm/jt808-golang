@@ -19,18 +19,23 @@ func Unmarshal[T any](data []byte, mesgPack *message.MessagePack[T]) error {
 // ConcatUnmarshal 拼接多个分段消息并解析
 func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBody], pack *message.MessagePack[T]) error {
 	if len(packs) < 2 {
-		return ErrConcatUnmarshalInvalidArgument
+		return ErrIncompletedPkgMesg
 	}
 
 	if packs[0].PackHeader.Package == nil {
-		return ErrNotPackagedMessage
+		return ErrNotPkgMesg
 	}
 
 	var (
 		mesgBodyBuf    = bytes.NewBuffer()
 		mesgBodyReader *bytes.Reader
 		mesgId         = packs[0].PackHeader.MessageID
+		sumcheckValid  = true
 	)
+
+	if len(packs) != int(packs[0].PackHeader.Package.TotalCount) {
+		return ErrIncompletedPkgMesg
+	}
 
 	sort.Slice(packs, func(i, j int) bool {
 		var (
@@ -47,11 +52,15 @@ func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBod
 
 	for i, pack := range packs {
 		if pack.PackHeader.Package == nil {
-			return ErrNotPackagedMessage
+			return ErrNotPkgMesg
 		}
 
 		if pack.PackHeader.MessageID != mesgId {
 			return fmt.Errorf("message at %d is not type of %.4X", i+1, mesgId)
+		}
+
+		if !pack.ChecksumValid {
+			sumcheckValid = false
 		}
 
 		mesgBodyBuf.Write(pack.PackBody.RawBody)
@@ -59,6 +68,9 @@ func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBod
 
 	pack.PackHeader = packs[0].PackHeader
 	pack.PackHeader.Package = nil
+	pack.Checksum = 0
+	pack.ChecksumValid = sumcheckValid
+	pack.PackHeader.Property.IsMultiplePackage = false
 	pack.PackHeader.Property.BodyByteLength = uint16(mesgBodyBuf.Len())
 
 	packBody, err := pack.NewPackBodyFromMesgId()
