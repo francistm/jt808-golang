@@ -56,7 +56,7 @@ func (*Body8100) MesgId() uint16 {
 	return uint16(0x8100)
 }
 
-func (m *MessagePack[T]) NewPackBodyFromMesgId() (any, error) {
+func (m *MessagePack[T]) NewPackBodyFromMesgId() (MesgBody, error) {
 	if m.PackHeader.Package != nil {
 		return new(PartialPackBody), nil
 	} else {

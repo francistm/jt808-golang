@@ -5,19 +5,21 @@ import (
 	"github.com/francistm/jt808-golang/internal/generator"
 )
 
-func genMesgBodyIface(f *File, mesgDecls []*generator.MessageDecl) {
+func genMesgBodyIface(f *File, mesgDecls []*generator.MesgDecl) {
 	for _, mesgDecl := range mesgDecls {
-		f.Func().
-			Params(
-				Op("*").Id(mesgDecl.StructName),
-			).
-			Id("MesgId").
-			Params().
-			Uint16().
-			Block(
-				Return(Lit(mesgDecl.MesgId)),
-			)
+		for _, version := range mesgDecl.Versions {
+			f.Func().
+				Params(
+					Op("*").Id(version.StructName),
+				).
+				Id("MesgId").
+				Params().
+				Uint16().
+				Block(
+					Return(Lit(mesgDecl.MesgId)),
+				)
 
-		f.Line()
+			f.Line()
+		}
 	}
 }

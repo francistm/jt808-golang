@@ -109,9 +109,10 @@ func (b *Body0200) ExtraMessage() (map[uint8][]byte, error) {
 }
 
 func (b *Body0200) SetExtraMessage(m map[uint8][]byte) error {
-	writer := new(bytes.Buffer)
-
-	dataIds := make([]uint8, 0, len(m))
+	var (
+		writer  = new(bytes.Buffer)
+		dataIds = make([]uint8, 0, len(m))
+	)
 
 	for dataId := range m {
 		dataIds = append(dataIds, dataId)
