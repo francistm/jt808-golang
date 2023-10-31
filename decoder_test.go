@@ -13,16 +13,16 @@ import (
 func Test_Unmarshal(t *testing.T) {
 	tests := []struct {
 		name       string
-		mesgPack   *message.MessagePack[any]
+		mesgPack   *message.MessagePack[message.MesgBody]
 		data       []byte
-		assertFunc func(*testing.T, *message.MessagePack[any])
+		assertFunc func(*testing.T, *message.MessagePack[message.MesgBody])
 		wantErr    bool
 	}{
 		{
 			name:     "mesg 0001",
-			mesgPack: new(message.MessagePack[any]),
+			mesgPack: new(message.MessagePack[message.MesgBody]),
 			data:     []byte{0x7e, 0x00, 0x01, 0x00, 0x05, 0x01, 0x86, 0x57, 0x40, 0x59, 0x79, 0x00, 0x8f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x2f, 0x7e},
-			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[any]) {
+			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody]) {
 				assert.Equal(t, uint16(0x0001), mesgPack.PackHeader.MessageID)
 				assert.Equal(t, uint16(0x0005), mesgPack.PackHeader.Property.BodyByteLength)
 				assert.Equal(t, uint8(0x2f), mesgPack.Checksum)
@@ -39,9 +39,9 @@ func Test_Unmarshal(t *testing.T) {
 		},
 		{
 			name:     "mesg 0200",
-			mesgPack: new(message.MessagePack[any]),
+			mesgPack: new(message.MessagePack[message.MesgBody]),
 			data:     []byte{0x7e, 0x02, 0x00, 0x00, 0x26, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x22, 0xb8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0xba, 0x7f, 0x0e, 0x07, 0xe4, 0xf1, 0x1c, 0x00, 0x28, 0x00, 0x3c, 0x00, 0x00, 0x18, 0x07, 0x15, 0x10, 0x10, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00, 0x64, 0x02, 0x02, 0x00, 0x37, 0x57, 0x7e},
-			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[any]) {
+			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody]) {
 				assert.True(t, mesgPack.ChecksumValid)
 				assert.Equal(t, uint16(0x0200), mesgPack.PackHeader.MessageID)
 				assert.Equal(t, uint8(0x57), mesgPack.Checksum)
@@ -111,7 +111,7 @@ func Test_ConcatUnmarshal(t *testing.T) {
 	tests := []struct {
 		name         string
 		mesgDataList [][]byte
-		assertFunc   func(t *testing.T, mesgPack *message.MessagePack[any])
+		assertFunc   func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody])
 		wantErr      bool
 	}{
 		{
@@ -122,7 +122,7 @@ func Test_ConcatUnmarshal(t *testing.T) {
 		{
 			name:         "unmarshal success",
 			mesgDataList: mesgDataList[:],
-			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[any]) {
+			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody]) {
 				if assert.IsType(t, new(message.Body0801), mesgPack.PackBody) {
 					packBody := mesgPack.PackBody.(*message.Body0801)
 
@@ -159,7 +159,7 @@ func Test_ConcatUnmarshal(t *testing.T) {
 				mesgPacks[i] = mesgPack
 			}
 
-			mesgPack := new(message.MessagePack[any])
+			mesgPack := new(message.MessagePack[message.MesgBody])
 			err := ConcatUnmarshal(mesgPacks[:], mesgPack)
 
 			if tt.wantErr {

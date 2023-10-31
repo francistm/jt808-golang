@@ -12,8 +12,9 @@ import (
 var structNameRegex = regexp.MustCompile(`^Body(\d+)$`)
 
 type MessageDecl struct {
-	Name     string
-	HeaderID uint16
+	StructName string
+	MesgId     uint16
+	Version    int
 }
 
 func buildMessageStructFromName(structName string) (*MessageDecl, error) {
@@ -23,15 +24,15 @@ func buildMessageStructFromName(structName string) (*MessageDecl, error) {
 		return nil, fmt.Errorf("messageName %s is invalid", structName)
 	}
 
-	headerID, err := strconv.ParseInt(matched[1], 16, 32)
+	mesgId, err := strconv.ParseUint(matched[1], 16, 16)
 
 	if err != nil {
 		return nil, err
 	}
 
 	messageStruct := MessageDecl{
-		Name:     structName,
-		HeaderID: uint16(headerID),
+		StructName: structName,
+		MesgId:     uint16(mesgId),
 	}
 
 	return &messageStruct, nil

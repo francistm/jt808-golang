@@ -12,12 +12,12 @@ import (
 //go:generate go run github.com/francistm/jt808-golang/tools/generator/decoder
 
 // Unmarshal 由二进制解析一个完整的消息包
-func Unmarshal[T any](data []byte, mesgPack *message.MessagePack[T]) error {
+func Unmarshal[T message.MesgBody](data []byte, mesgPack *message.MessagePack[T]) error {
 	return mesgPack.UnmarshalBinary(data)
 }
 
 // ConcatUnmarshal 拼接多个分段消息并解析
-func ConcatUnmarshal[T any](packs []*message.MessagePack[*message.PartialPackBody], pack *message.MessagePack[T]) error {
+func ConcatUnmarshal[T message.MesgBody](packs []*message.MessagePack[*message.PartialPackBody], pack *message.MessagePack[T]) error {
 	if len(packs) < 2 {
 		return ErrIncompletedPkgMesg
 	}

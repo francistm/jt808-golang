@@ -10,7 +10,7 @@ import (
 )
 
 // MessagePack 通用的消息体结构
-type MessagePack[T any] struct {
+type MessagePack[T MesgBody] struct {
 	PackBody      T
 	PackHeader    PackHeader
 	Checksum      uint8

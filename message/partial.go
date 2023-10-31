@@ -12,3 +12,7 @@ var (
 type PartialPackBody struct {
 	RawBody []byte `jt808:"-1,raw"`
 }
+
+func (*PartialPackBody) MesgId() uint16 {
+	return 0
+}
