@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
@@ -78,6 +79,10 @@ func GetAllMessageDecls() ([]*MessageDecl, error) {
 			}
 		}
 	}
+
+	sort.Slice(messageStructs, func(i, j int) bool {
+		return messageStructs[i].MesgId < messageStructs[j].MesgId
+	})
 
 	return messageStructs, nil
 }
