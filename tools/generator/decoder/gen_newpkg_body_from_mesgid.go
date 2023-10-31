@@ -26,15 +26,23 @@ func genNewPkgBodyFromMesgId(f *File, mesgDecls []*generator.MesgDecl) {
 							g.Case(Lit(mesgDecl.MesgId)).Block(Return(New(Id(mesgDecl.Versions[0].StructName)), Nil()))
 						} else if len(mesgDecl.Versions) == 2 {
 							g.Case(Lit(mesgDecl.MesgId)).BlockFunc(func(g *Group) {
-								g.If(Id("m").Dot("PackHeader").Dot("Version").Op("==").Id("Version2013")).
+								g.If(Id("m").Dot("PackHeader").Dot("Property").Dot("Version").Op("==").Id("Version2013")).
 									Block(Return(
 										New(Id(mesgDecl.Versions[0].StructName)),
 										Nil(),
 									)).
-									Else().If(Id("m").Dot("PackHeader").Dot("Version").Op("==").Id("Version2019")).
+									Else().If(Id("m").Dot("PackHeader").Dot("Property").Dot("Version").Op("==").Id("Version2019")).
 									Block(Return(
 										New(Id(mesgDecl.Versions[1].StructName)),
 										Nil(),
+									)).
+									Else().
+									Block(Return(
+										Nil(),
+										Qual("fmt", "Errorf").Call(
+											Lit("unsupport protocol version: %d"),
+											Id("m").Dot("PackHeader").Dot("Property").Dot("Version"),
+										),
 									))
 							})
 						}

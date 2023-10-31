@@ -24,11 +24,19 @@ func (*Body0005) MesgId() uint16 {
 	return uint16(0x5)
 }
 
-func (*Body0100) MesgId() uint16 {
+func (*Body0100_13) MesgId() uint16 {
 	return uint16(0x100)
 }
 
-func (*Body0102) MesgId() uint16 {
+func (*Body0100_19) MesgId() uint16 {
+	return uint16(0x100)
+}
+
+func (*Body0102_13) MesgId() uint16 {
+	return uint16(0x102)
+}
+
+func (*Body0102_19) MesgId() uint16 {
 	return uint16(0x102)
 }
 
@@ -72,9 +80,21 @@ func (m *MessagePack[T]) NewPackBodyFromMesgId() (MesgBody, error) {
 		case uint16(0x5):
 			return new(Body0005), nil
 		case uint16(0x100):
-			return new(Body0100), nil
+			if m.PackHeader.Property.Version == Version2013 {
+				return new(Body0100_13), nil
+			} else if m.PackHeader.Property.Version == Version2019 {
+				return new(Body0100_19), nil
+			} else {
+				return nil, fmt.Errorf("unsupport protocol version: %d", m.PackHeader.Property.Version)
+			}
 		case uint16(0x102):
-			return new(Body0102), nil
+			if m.PackHeader.Property.Version == Version2013 {
+				return new(Body0102_13), nil
+			} else if m.PackHeader.Property.Version == Version2019 {
+				return new(Body0102_19), nil
+			} else {
+				return nil, fmt.Errorf("unsupport protocol version: %d", m.PackHeader.Property.Version)
+			}
 		case uint16(0x200):
 			return new(Body0200), nil
 		case uint16(0x801):

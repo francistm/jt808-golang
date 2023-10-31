@@ -29,14 +29,14 @@ func parseDeclName(structName string) (uint16, int, error) {
 	mesgIdParsed, err := strconv.ParseUint(matched[1], 16, 16)
 
 	if err != nil {
-		return 0, 0, fmt.Errorf("invalid name %s", structName)
+		return 0, 0, fmt.Errorf("invalid name %s, %w", structName, err)
 	}
 
 	if matched[3] != "" {
-		versionParsed, err := strconv.ParseUint(matched[3], 10, 4)
+		versionParsed, err := strconv.ParseUint(matched[3], 10, 8)
 
 		if err != nil {
-			return 0, 0, fmt.Errorf("invalid name %s", structName)
+			return 0, 0, fmt.Errorf("invalid name %s, %w", structName, err)
 		}
 
 		version = int(versionParsed)

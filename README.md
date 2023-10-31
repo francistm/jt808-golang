@@ -44,11 +44,11 @@ type Body0001 struct {
 # Benchmark
 ~~~
 > go version
-go version go1.18.10 darwin/arm64
+go version go1.20.10 darwin/arm64
 
 > sysctl -a | grep machdep.cpu.brand_string
 machdep.cpu.brand_string: Apple M1 Pro
 
 > go test -bench=. -benchmem  ./...
-BenchmarkUnmarshal0001-8   	 1810700	       657.5 ns/op	     312 B/op	      18 allocs/op
+Benchmark_Unmarshal0001-8   	 1186509	      1006 ns/op	     776 B/op	      23 allocs/op
 ~~~

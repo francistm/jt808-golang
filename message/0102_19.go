@@ -7,14 +7,14 @@ import (
 )
 
 // 终端鉴权
-type Body0102 struct {
+type Body0102_19 struct {
 	AuthCodeSize  uint8
 	AuthCode      string
 	DeviceIMEI    string // 15 byte
 	DeviceVersion string // 20 byte
 }
 
-func (body *Body0102) MarshalBinary() ([]byte, error) {
+func (body *Body0102_19) MarshalBinary() ([]byte, error) {
 	buf := bytes.NewBuffer()
 
 	buf.WriteUint8(uint8(len(body.AuthCode)))
@@ -25,7 +25,7 @@ func (body *Body0102) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (body *Body0102) UnmarshalBinary(data []byte) error {
+func (body *Body0102_19) UnmarshalBinary(data []byte) error {
 	reader := bytes.NewReader(data)
 	authSize, err := reader.ReadUint8()
 
