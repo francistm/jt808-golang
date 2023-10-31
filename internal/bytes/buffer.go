@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"strings"
 )
 
@@ -45,11 +46,27 @@ func (b *Buffer) WriteUint32(i uint32) error {
 	return nil
 }
 
-func (b *Buffer) WriteBCD(s string) error {
+func (b *Buffer) WriteBCD(s string, size int) error {
+	if size%2 != 0 {
+		return errors.New("size must be even")
+	}
+
+	if len(s)%2 != 0 && len(s) < size*2 {
+		s = "0" + s
+	} else if len(s)%2 != 0 && len(s) > size*2 {
+		s = s[:size*2]
+	}
+
 	data, err := hex.DecodeString(s)
 
 	if err != nil {
 		return err
+	}
+
+	if len(data) < size {
+		data = append(make([]byte, size-len(data)), data...)
+	} else if len(data) > size {
+		data = data[:size]
 	}
 
 	if _, err := b.Write(data); err != nil {

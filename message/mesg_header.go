@@ -28,6 +28,14 @@ type PackHeader struct {
 }
 
 func (h *PackHeader) MarshalBinary() ([]byte, error) {
+	var terminalMobileNoSize int
+
+	if h.Property.Version == Version2013 {
+		terminalMobileNoSize = 6
+	} else if h.Property.Version == Version2019 {
+		terminalMobileNoSize = 10
+	}
+
 	buf := bytes.NewBuffer()
 
 	if err := buf.WriteUint16(h.MessageID); err != nil {
@@ -44,7 +52,7 @@ func (h *PackHeader) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := buf.WriteBCD(h.TerminalMobileNo); err != nil {
+	if err := buf.WriteBCD(h.TerminalMobileNo, terminalMobileNoSize); err != nil {
 		return nil, err
 	}
 

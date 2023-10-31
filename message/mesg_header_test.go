@@ -11,6 +11,7 @@ func Test_PackHeader_MarshalBinary(t *testing.T) {
 		MessageID: 0x0102,
 		Property: PackHeaderProperty{
 			BodyByteLength: 5,
+			Version:        Version2013,
 		},
 		TerminalMobileNo: "013812345678",
 		SerialNo:         0x0087,

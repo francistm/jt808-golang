@@ -57,6 +57,7 @@ func MarshalStruct(buffer *bytes.Buffer, source any) error {
 			if parsedTag.Encoding != tag.EncodingRaw {
 				return fmt.Errorf("unknown field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)
 			}
+
 			_, err = buffer.Write(fieldValue.Bytes())
 
 		case fieldType.Type.Kind() == reflect.String:
@@ -64,7 +65,7 @@ func MarshalStruct(buffer *bytes.Buffer, source any) error {
 				return fmt.Errorf("unknown field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)
 			}
 
-			err = buffer.WriteBCD(fieldValue.String())
+			err = buffer.WriteBCD(fieldValue.String(), parsedTag.Length)
 
 		case fieldType.Type.Kind() == reflect.Struct:
 			err = MarshalStruct(buffer, fieldValue.Interface())
