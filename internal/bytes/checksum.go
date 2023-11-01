@@ -24,7 +24,7 @@ func CalcChecksum(buf []byte) (byte, error) {
 
 		b, err = reader.ReadByte()
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 

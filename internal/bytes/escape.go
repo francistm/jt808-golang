@@ -15,11 +15,11 @@ func Escape(buf []byte) ([]byte, error) {
 	for {
 		b, err := reader.ReadByte()
 
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
+		if errors.Is(err, io.EOF) {
+			break
+		}
 
+		if err != nil {
 			return nil, err
 		}
 
@@ -49,11 +49,11 @@ func Unescape(buf []byte) ([]byte, error) {
 	for {
 		b, err := reader.ReadByte()
 
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
+		if errors.Is(err, io.EOF) {
+			break
+		}
 
+		if err != nil {
 			return nil, err
 		}
 

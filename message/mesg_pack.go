@@ -96,12 +96,6 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
-	checksumActually, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
-
-	if err != nil {
-		return err
-	}
-
 	reader = bytes.NewReader(buf)
 
 	// read header, depends on is multiple package message
@@ -145,21 +139,20 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return err
 	}
 
-	// update checksum in message pack
-	checksumExpected, err := reader.ReadByte()
-
-	if err != nil {
-		return err
-	}
-
 	typedPackBody, ok := packBody.(T)
 
 	if !ok {
 		return fmt.Errorf("can't convert mesgBody %T as %T", packBody, p.PackBody)
 	}
 
+	checksumActually, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
+
+	if err != nil {
+		return err
+	}
+
 	p.PackBody = typedPackBody
-	p.Checksum = checksumExpected
+	p.Checksum = buf[len(buf)-1]
 	p.checksumActually = checksumActually
 
 	return nil
