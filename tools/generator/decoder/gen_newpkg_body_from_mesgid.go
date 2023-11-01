@@ -50,10 +50,7 @@ func genNewPkgBodyFromMesgId(f *File, mesgDecls []*generator.MesgDecl) {
 
 					g.Default().Return(
 						Nil(),
-						Qual("fmt", "Errorf").Call(
-							Lit("unsupported messageId: 0x%.4X"),
-							Id("m").Dot("PackHeader").Dot("MessageID"),
-						),
+						Id("ErrMesgNotSupport"),
 					)
 				}),
 			),

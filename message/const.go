@@ -1,5 +1,7 @@
 package message
 
+import "errors"
+
 const (
 	AckType_0001_Succeed byte = iota
 	AckType_0001_Failed
@@ -27,3 +29,5 @@ const (
 	Version2013 byte = iota
 	Version2019
 )
+
+var ErrMesgNotSupport = errors.New("unsupported message")

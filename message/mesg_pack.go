@@ -119,6 +119,15 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		_ = reader.UnreadFixedBytes(4)
 	}
 
+	checksumActually, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
+
+	if err != nil {
+		return err
+	}
+
+	p.Checksum = buf[len(buf)-1]
+	p.checksumActually = checksumActually
+
 	// update PackBody field from readed bytes to struct
 	packBody, err := p.NewPackBodyFromMesgId()
 
@@ -145,15 +154,7 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 		return fmt.Errorf("can't convert mesgBody %T as %T", packBody, p.PackBody)
 	}
 
-	checksumActually, err = bytes.CalcChecksum(buf[0 : len(buf)-1])
-
-	if err != nil {
-		return err
-	}
-
 	p.PackBody = typedPackBody
-	p.Checksum = buf[len(buf)-1]
-	p.checksumActually = checksumActually
 
 	return nil
 }

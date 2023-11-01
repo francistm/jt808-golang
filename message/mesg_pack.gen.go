@@ -108,7 +108,7 @@ func (m *MessagePack[T]) NewPackBodyFromMesgId() (MesgBody, error) {
 		case uint16(0x8100):
 			return new(Body8100), nil
 		default:
-			return nil, fmt.Errorf("unsupported messageId: 0x%.4X", m.PackHeader.MessageID)
+			return nil, ErrMesgNotSupport
 		}
 	}
 }
