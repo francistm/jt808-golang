@@ -11,10 +11,11 @@ import (
 
 // MessagePack 通用的消息体结构
 type MessagePack[T MesgBody] struct {
-	PackBody      T
-	PackHeader    PackHeader
-	Checksum      uint8
-	ChecksumValid bool
+	PackBody   T
+	PackHeader PackHeader
+	Checksum   uint8
+
+	checksumActually uint8
 }
 
 func (p *MessagePack[T]) MarshalBinary() ([]byte, error) {
@@ -159,7 +160,11 @@ func (p *MessagePack[T]) UnmarshalBinary(buf []byte) error {
 
 	p.PackBody = typedPackBody
 	p.Checksum = checksumExpected
-	p.ChecksumValid = checksumExpected == checksumActually
+	p.checksumActually = checksumActually
 
 	return nil
+}
+
+func (p *MessagePack[T]) ChecksumValid() bool {
+	return p.Checksum == p.checksumActually
 }

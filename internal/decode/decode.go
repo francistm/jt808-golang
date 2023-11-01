@@ -108,7 +108,6 @@ func UnmarshalStruct(reader *bytes.Reader, target any) error {
 				fieldValueRef := head.ValueRef.Field(i)
 
 				if structField.PkgPath != "" {
-					fmt.Printf("%s.%s pkgPath %s\n", head.TypeRef.Name(), structField.Name, structField.PkgPath)
 					continue
 				}
 

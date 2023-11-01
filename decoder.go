@@ -30,7 +30,6 @@ func ConcatUnmarshal[T message.MesgBody](packs []*message.MessagePack[*message.P
 		mesgBodyBuf    = bytes.NewBuffer()
 		mesgBodyReader *bytes.Reader
 		mesgId         = packs[0].PackHeader.MessageID
-		sumcheckValid  = true
 	)
 
 	if len(packs) != int(packs[0].PackHeader.Package.Total) {
@@ -59,17 +58,16 @@ func ConcatUnmarshal[T message.MesgBody](packs []*message.MessagePack[*message.P
 			return fmt.Errorf("message at %d is not type of %.4X", i+1, mesgId)
 		}
 
-		if !pack.ChecksumValid {
-			sumcheckValid = false
+		if pack.PackHeader.Package.Index != uint16(i+1) {
+			return fmt.Errorf("message at %d is not the %dth message", i+1, i+1)
 		}
 
+		mesgId = pack.PackHeader.MessageID
 		mesgBodyBuf.Write(pack.PackBody.RawBody)
 	}
 
 	pack.PackHeader = packs[0].PackHeader
 	pack.PackHeader.Package = nil
-	pack.Checksum = 0
-	pack.ChecksumValid = sumcheckValid
 	pack.PackHeader.Property.IsMultiplePackage = false
 	pack.PackHeader.Property.BodyByteLength = uint16(mesgBodyBuf.Len())
 
@@ -85,6 +83,7 @@ func ConcatUnmarshal[T message.MesgBody](packs []*message.MessagePack[*message.P
 		return fmt.Errorf("can't convert body from %T to %T", packBody, pack.PackBody)
 	}
 
+	pack.Checksum = 0
 	pack.PackBody = typedPackBody
 	mesgBodyReader = bytes.NewReader(mesgBodyBuf.Bytes())
 

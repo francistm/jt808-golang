@@ -12,9 +12,9 @@ func TestMarshal0200(t *testing.T) {
 	messagePack := new(message.MessagePack[*message.Body0200])
 
 	messagePack.PackHeader = message.PackHeader{
-		MessageID:        0x0200,
-		TerminalMobileNo: "123456789012",
-		SerialNo:         126,
+		MessageID:         0x0200,
+		TerminalMobileNum: "123456789012",
+		SerialNum:         126,
 	}
 
 	body0200 := &message.Body0200{

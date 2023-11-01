@@ -25,8 +25,8 @@ func Test_Unmarshal(t *testing.T) {
 			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody]) {
 				assert.Equal(t, uint16(0x0001), mesgPack.PackHeader.MessageID)
 				assert.Equal(t, uint16(0x0005), mesgPack.PackHeader.Property.BodyByteLength)
-				assert.Equal(t, uint8(0x2f), mesgPack.Checksum)
-				assert.True(t, mesgPack.ChecksumValid)
+				assert.Equal(t, uint8(0x2f), mesgPack.Checksum, "checksum should valid")
+				assert.True(t, mesgPack.ChecksumValid())
 
 				if assert.IsType(t, new(message.Body0001), mesgPack.PackBody) {
 					packBody := mesgPack.PackBody.(*message.Body0001)
@@ -42,7 +42,7 @@ func Test_Unmarshal(t *testing.T) {
 			mesgPack: new(message.MessagePack[message.MesgBody]),
 			data:     []byte{0x7e, 0x02, 0x00, 0x00, 0x26, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x22, 0xb8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0xba, 0x7f, 0x0e, 0x07, 0xe4, 0xf1, 0x1c, 0x00, 0x28, 0x00, 0x3c, 0x00, 0x00, 0x18, 0x07, 0x15, 0x10, 0x10, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00, 0x64, 0x02, 0x02, 0x00, 0x37, 0x57, 0x7e},
 			assertFunc: func(t *testing.T, mesgPack *message.MessagePack[message.MesgBody]) {
-				assert.True(t, mesgPack.ChecksumValid)
+				assert.True(t, mesgPack.ChecksumValid(), "checksum should valid")
 				assert.Equal(t, uint16(0x0200), mesgPack.PackHeader.MessageID)
 				assert.Equal(t, uint8(0x57), mesgPack.Checksum)
 

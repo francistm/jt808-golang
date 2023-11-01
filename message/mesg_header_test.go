@@ -13,8 +13,8 @@ func Test_PackHeader_MarshalBinary(t *testing.T) {
 			BodyByteLength: 5,
 			Version:        Version2013,
 		},
-		TerminalMobileNo: "013812345678",
-		SerialNo:         0x0087,
+		TerminalMobileNum: "013812345678",
+		SerialNum:         0x0087,
 	}
 
 	got, err := packHeader.MarshalBinary()
@@ -35,8 +35,8 @@ func Test_PackHeader_UnmarshalBinary(t *testing.T) {
 		assert.Equal(t, uint16(0x0005), packHeader.Property.BodyByteLength)
 		assert.Equal(t, false, packHeader.Property.IsEncrypted)
 		assert.Equal(t, false, packHeader.Property.IsMultiplePackage)
-		assert.Equal(t, "013812345678", packHeader.TerminalMobileNo)
-		assert.Equal(t, uint16(0x0087), packHeader.SerialNo)
+		assert.Equal(t, "013812345678", packHeader.TerminalMobileNum)
+		assert.Equal(t, uint16(0x0087), packHeader.SerialNum)
 		assert.Nil(t, packHeader.Package)
 	}
 }

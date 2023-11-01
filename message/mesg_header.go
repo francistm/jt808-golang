@@ -15,25 +15,25 @@ type PackHeader struct {
 	Property PackHeaderProperty
 
 	// 协议版本号 (2019)
-	ProtocolVersion uint8
+	VersionStep uint8
 
 	// 终端手机号
-	TerminalMobileNo string
+	TerminalMobileNum string
 
 	// 消息流水号
-	SerialNo uint16
+	SerialNum uint16
 
 	// 消息包封装项
 	Package *PackHeaderPackage
 }
 
 func (h *PackHeader) MarshalBinary() ([]byte, error) {
-	var terminalMobileNoSize int
+	var terminalMobileNumSize int
 
 	if h.Property.Version == Version2013 {
-		terminalMobileNoSize = 6
+		terminalMobileNumSize = 6
 	} else if h.Property.Version == Version2019 {
-		terminalMobileNoSize = 10
+		terminalMobileNumSize = 10
 	}
 
 	buf := bytes.NewBuffer()
@@ -52,11 +52,11 @@ func (h *PackHeader) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := buf.WriteBCD(h.TerminalMobileNo, terminalMobileNoSize); err != nil {
+	if err := buf.WriteBCD(h.TerminalMobileNum, terminalMobileNumSize); err != nil {
 		return nil, err
 	}
 
-	if err := buf.WriteUint16(h.SerialNo); err != nil {
+	if err := buf.WriteUint16(h.SerialNum); err != nil {
 		return nil, err
 	}
 
@@ -68,11 +68,11 @@ func (h *PackHeader) UnmarshalBinary(in []byte) error {
 		err    error
 		reader = bytes.NewReader(in)
 
-		mesgId           uint16
-		protocolVersion  uint8
-		terminalMobileNo string
-		serialNumber     uint16
-		packPackage      *PackHeaderPackage
+		mesgId            uint16
+		versionStep       uint8
+		terminalMobileNum string
+		serialNum         uint16
+		packPackage       *PackHeaderPackage
 	)
 
 	mesgId, err = reader.ReadUint16()
@@ -92,26 +92,26 @@ func (h *PackHeader) UnmarshalBinary(in []byte) error {
 	}
 
 	if h.Property.Version == Version2013 {
-		terminalMobileNo, err = reader.ReadBCD(6)
+		terminalMobileNum, err = reader.ReadBCD(6)
 
 		if err != nil {
 			return err
 		}
 	} else if h.Property.Version == Version2019 {
-		protocolVersion, err = reader.ReadByte()
+		versionStep, err = reader.ReadByte()
 
 		if err != nil {
 			return err
 		}
 
-		terminalMobileNo, err = reader.ReadBCD(10)
+		terminalMobileNum, err = reader.ReadBCD(10)
 
 		if err != nil {
 			return err
 		}
 	}
 
-	serialNumber, err = reader.ReadUint16()
+	serialNum, err = reader.ReadUint16()
 
 	if err != nil {
 		return err
@@ -132,9 +132,9 @@ func (h *PackHeader) UnmarshalBinary(in []byte) error {
 	}
 
 	h.MessageID = mesgId
-	h.ProtocolVersion = protocolVersion
-	h.TerminalMobileNo = terminalMobileNo
-	h.SerialNo = serialNumber
+	h.VersionStep = versionStep
+	h.TerminalMobileNum = terminalMobileNum
+	h.SerialNum = serialNum
 	h.Package = packPackage
 
 	return nil
@@ -221,8 +221,6 @@ func (p *PackHeaderPackage) UnmarshalBinary(b []byte) error {
 		return err
 	}
 
-	p.Total = total
-
 	index, err := r.ReadUint16()
 
 	if err != nil {
@@ -230,6 +228,7 @@ func (p *PackHeaderPackage) UnmarshalBinary(b []byte) error {
 	}
 
 	p.Index = index
+	p.Total = total
 
 	return nil
 }
