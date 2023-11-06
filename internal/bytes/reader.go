@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 type Reader struct {
@@ -77,6 +78,16 @@ func (r *Reader) ReadFixedString(size int) (string, error) {
 	}
 
 	return string(buf[0:readSize]), nil
+}
+
+func (r *Reader) ReadRestAsString() (string, error) {
+	data, err := io.ReadAll(r)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 func (r *Reader) UnreadFixedBytes(size int) error {

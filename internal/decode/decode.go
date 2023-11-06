@@ -93,11 +93,13 @@ func UnmarshalStruct(reader *bytes.Reader, target any) error {
 				return fmt.Errorf("cannot parse tag of field %s.%s", head.StructName, head.FieldName)
 			}
 
-			if parsedTag.Length < 1 {
-				return fmt.Errorf("missing byte length for field %s.%s", head.StructName, head.FieldName)
+			if parsedTag.Length == -1 {
+				rawData, err = reader.ReadRestAsString()
+			} else if parsedTag.Length > 0 {
+				rawData, err = reader.ReadFixedString(parsedTag.Length)
+			} else {
+				return fmt.Errorf("missing string length for field %s.%s", head.StructName, head.FieldName)
 			}
-
-			rawData, err = reader.ReadFixedString(parsedTag.Length)
 
 		case head.TypeRef.Kind() == reflect.Struct:
 			fields := refFields

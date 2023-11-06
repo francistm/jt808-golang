@@ -4,9 +4,9 @@ package message
 type Body0100_19 struct {
 	Province          uint16
 	City              uint16
-	Manufacturer      []byte `jt808:"11,raw"`
-	DeviceModel       []byte `jt808:"30,raw"`
-	DeviceId          []byte `jt808:"30,raw"`
+	Manufacturer      string `jt808:"11,raw"`
+	DeviceModel       string `jt808:"30,raw"`
+	DeviceId          string `jt808:"30,raw"`
 	LicencePlateColor uint8
 	LicencePlate      string `jt808:"-1,gbk"`
 }
