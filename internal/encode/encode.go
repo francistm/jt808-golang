@@ -55,17 +55,19 @@ func MarshalStruct(buffer *bytes.Buffer, source any) error {
 
 		case fieldType.Type.Kind() == reflect.Slice && fieldType.Type.Elem().Kind() == reflect.Uint8:
 			if parsedTag.Encoding != tag.EncodingRaw {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)
+				return fmt.Errorf("unsupport field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)
 			}
 
 			_, err = buffer.Write(fieldValue.Bytes())
 
 		case fieldType.Type.Kind() == reflect.String:
-			if parsedTag.Encoding != tag.EncodingBCD {
-				return fmt.Errorf("unknown field %s.%s encoding: %s", mesgBodyTypeRef.Name(), fieldType.Name, parsedTag.Encoding)
-			}
+			switch parsedTag.Encoding {
+			case tag.EncodingBCD:
+				err = buffer.WriteBCD(fieldValue.String(), parsedTag.Length)
 
-			err = buffer.WriteBCD(fieldValue.String(), parsedTag.Length)
+			default:
+				_, err = buffer.WriteString(fieldValue.String())
+			}
 
 		case fieldType.Type.Kind() == reflect.Struct:
 			err = MarshalStruct(buffer, fieldValue.Interface())
