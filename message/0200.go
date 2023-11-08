@@ -1,12 +1,13 @@
 package message
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"math"
 	"sort"
 	"time"
+
+	"github.com/francistm/jt808-golang/internal/bytes"
 )
 
 // 位置信息汇报
@@ -58,75 +59,70 @@ func (b *Body0200) Time() time.Time {
 	return t
 }
 
-func (b *Body0200) SetTime(t *time.Time) {
-	b.RawTime = t.In(timezoneCST).Format(timeLayoutBCD)
+func (b *Body0200) SetTime(tIn time.Time) {
+	b.RawTime = tIn.In(timezoneCST).Format(timeLayoutBCD)
 }
 
 func (b *Body0200) ExtraMessage() (map[uint8][]byte, error) {
-	var (
-		reader    *bytes.Reader
-		extraData map[uint8][]byte
-	)
-
-	if b.parsedExtraMessage != nil {
-		return b.parsedExtraMessage, nil
-	}
-
 	if len(b.RawExtraMessage) == 0 {
-		return extraData, nil
+		return nil, nil
 	}
 
-	reader = bytes.NewReader(b.RawExtraMessage)
-	extraData = make(map[uint8][]byte)
+	if b.parsedExtraMessage == nil {
+		reader := bytes.NewReader(b.RawExtraMessage)
+		extraMesgs := make(map[uint8][]byte)
 
-	for {
-		id, err := reader.ReadByte()
+		for {
+			id, err := reader.ReadByte()
 
-		if errors.Is(err, io.EOF) {
-			break
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			dataSize, err := reader.ReadByte()
+
+			if err != nil {
+				return nil, err
+			}
+
+			mesgData, err := reader.ReadFixedBytes(int(dataSize))
+
+			if err != nil {
+				return nil, err
+			}
+
+			extraMesgs[id] = mesgData
 		}
 
-		if err != nil {
-			return nil, err
-		}
-
-		dataLength, err := reader.ReadByte()
-
-		if err != nil {
-			return nil, err
-		}
-
-		extraData[id] = make([]byte, dataLength)
-
-		if _, err := reader.Read(extraData[id]); err != nil {
-			return nil, err
-		}
+		b.parsedExtraMessage = extraMesgs
 	}
 
-	b.parsedExtraMessage = extraData
-
-	return extraData, nil
+	return b.parsedExtraMessage, nil
 }
 
 func (b *Body0200) SetExtraMessage(m map[uint8][]byte) error {
 	var (
-		writer  = new(bytes.Buffer)
-		dataIds = make([]uint8, 0, len(m))
+		writer       = bytes.NewBuffer()
+		extraMesgIds = make([]uint8, 0, len(m))
 	)
 
-	for dataId := range m {
-		dataIds = append(dataIds, dataId)
+	for extraMesgId := range m {
+		extraMesgIds = append(extraMesgIds, extraMesgId)
 	}
 
-	sort.SliceStable(dataIds, func(i, j int) bool {
-		return dataIds[i] < dataIds[j]
+	sort.Slice(extraMesgIds, func(i, j int) bool {
+		return extraMesgIds[i] < extraMesgIds[j]
 	})
 
-	for _, dataId := range dataIds {
-		data := m[dataId]
+	for _, extraMesgId := range extraMesgIds {
+		data := m[extraMesgId]
 		dataSize := uint8(len(data))
 
-		if err := writer.WriteByte(dataId); err != nil {
+		if err := writer.WriteByte(extraMesgId); err != nil {
 			return err
 		}
 

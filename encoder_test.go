@@ -60,7 +60,7 @@ func TestMarshal0200(t *testing.T) {
 						base.SetLatitude(12.222222)
 						base.SetLongitude(132.444444)
 						base.SetSpeed(6)
-						base.SetTime(&[]time.Time{time.Unix(1539569410, 0)}[0]) // // 2018-10-15 10:10:10 UTC
+						base.SetTime(time.Unix(1539569410, 0)) // // 2018-10-15 10:10:10 UTC
 						base.SetExtraMessage(map[uint8][]byte{
 							0x01: {0x00, 0x00, 0x00, 0x64},
 							0x02: {0x00, 0x7d},

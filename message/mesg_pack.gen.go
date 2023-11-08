@@ -40,6 +40,14 @@ func (*Body0102_19) MesgId() uint16 {
 	return uint16(0x102)
 }
 
+func (*Body0104_19) MesgId() uint16 {
+	return uint16(0x104)
+}
+
+func (*Body0107_13) MesgId() uint16 {
+	return uint16(0x107)
+}
+
 func (*Body0200) MesgId() uint16 {
 	return uint16(0x200)
 }
@@ -65,6 +73,8 @@ func (*Body8100) MesgId() uint16 {
 }
 
 func (m *MessagePack[T]) NewPackBodyFromMesgId() (MesgBody, error) {
+	const unsupportErrMesg = "unsupport protocol version: %d"
+
 	if m.PackHeader.Package != nil {
 		return new(PartialPackBody), nil
 	} else {
@@ -82,19 +92,29 @@ func (m *MessagePack[T]) NewPackBodyFromMesgId() (MesgBody, error) {
 		case uint16(0x100):
 			if m.PackHeader.Property.Version == Version2013 {
 				return new(Body0100_13), nil
-			} else if m.PackHeader.Property.Version == Version2019 {
-				return new(Body0100_19), nil
-			} else {
-				return nil, fmt.Errorf("unsupport protocol version: %d", m.PackHeader.Property.Version)
 			}
+			if m.PackHeader.Property.Version == Version2019 {
+				return new(Body0100_19), nil
+			}
+			return nil, fmt.Errorf(unsupportErrMesg, m.PackHeader.Property.Version)
 		case uint16(0x102):
 			if m.PackHeader.Property.Version == Version2013 {
 				return new(Body0102_13), nil
-			} else if m.PackHeader.Property.Version == Version2019 {
-				return new(Body0102_19), nil
-			} else {
-				return nil, fmt.Errorf("unsupport protocol version: %d", m.PackHeader.Property.Version)
 			}
+			if m.PackHeader.Property.Version == Version2019 {
+				return new(Body0102_19), nil
+			}
+			return nil, fmt.Errorf(unsupportErrMesg, m.PackHeader.Property.Version)
+		case uint16(0x104):
+			if m.PackHeader.Property.Version == Version2019 {
+				return new(Body0104_19), nil
+			}
+			return nil, fmt.Errorf(unsupportErrMesg, m.PackHeader.Property.Version)
+		case uint16(0x107):
+			if m.PackHeader.Property.Version == Version2013 {
+				return new(Body0107_13), nil
+			}
+			return nil, fmt.Errorf(unsupportErrMesg, m.PackHeader.Property.Version)
 		case uint16(0x200):
 			return new(Body0200), nil
 		case uint16(0x801):
