@@ -8,6 +8,10 @@ import (
 func genMesgBodyIface(f *File, mesgDecls []*generator.MesgDecl) {
 	for _, mesgDecl := range mesgDecls {
 		for _, version := range mesgDecl.Versions {
+			if version == nil {
+				continue
+			}
+
 			f.Func().
 				Params(
 					Op("*").Id(version.StructName),

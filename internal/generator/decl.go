@@ -8,7 +8,7 @@ import (
 
 type MesgDecl struct {
 	MesgId   uint16
-	Versions []MesgDeclVersion
+	Versions [3]*MesgDeclVersion
 }
 
 type MesgDeclVersion struct {
@@ -61,35 +61,32 @@ func buildMesgDecls(declNames []string) ([]*MesgDecl, error) {
 		mesgDecl, ok := mesgDeclsMap[mesgId]
 
 		if !ok {
-			mesgDecl = &MesgDecl{
-				MesgId:   mesgId,
-				Versions: make([]MesgDeclVersion, 0, 2),
-			}
-
-			mesgDecl.Versions = append(mesgDecl.Versions, MesgDeclVersion{
-				Version:    version,
-				StructName: typeName,
-			})
+			mesgDecl = &MesgDecl{MesgId: mesgId}
 
 			mesgDeclsMap[mesgId] = mesgDecl
 			mesgDecls = append(mesgDecls, mesgDecl)
-		} else {
-			mesgDecl.Versions = append(mesgDecl.Versions, MesgDeclVersion{
-				Version:    version,
-				StructName: typeName,
-			})
+		}
+
+		declVersion := &MesgDeclVersion{
+			Version:    version,
+			StructName: typeName,
+		}
+
+		switch version {
+		case 13:
+			mesgDecl.Versions[1] = declVersion
+
+		case 19:
+			mesgDecl.Versions[2] = declVersion
+
+		default:
+			mesgDecl.Versions[0] = declVersion
 		}
 	}
 
 	sort.Slice(mesgDecls, func(i, j int) bool {
 		return mesgDecls[i].MesgId < mesgDecls[j].MesgId
 	})
-
-	for _, mesgDecl := range mesgDecls {
-		sort.Slice(mesgDecl.Versions, func(i, j int) bool {
-			return mesgDecl.Versions[i].Version < mesgDecl.Versions[j].Version
-		})
-	}
 
 	return mesgDecls, nil
 }
